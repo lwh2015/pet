@@ -11,9 +11,11 @@
 //     the model that crosses the drag threshold drives window.petApi.drag.*;
 //     a mousedown over the model with no drag is a TAP -> playAction('react').
 //     A mousedown over a transparent area is ignored (passes through).
-//   - HTML5 file drag/drop on the window -> playAction('receive') for visual
-//     feedback AND resolves real OS paths via window.petApi.resolveDroppedPaths +
-//     window.petApi.ingestPaths (Plan 3 real ingestion into the vault).
+//   - HTML5 drag-to-feed: while a file is dragged over the pet it looks toward
+//     the file and holds a "hungry" expression; on drop it shows a "satisfied"
+//     expression + a reaction motion, then ingests the file(s) into the vault.
+//     Paths are resolved per-File via window.petApi.getPathForFile (a FileList
+//     does NOT survive the contextBridge) then sent to window.petApi.ingestPaths.
 //
 // CROSS-GROUP COUPLING: onMouseDown sits on .pet-root (pointer-events:none in
 // the sibling-group pet.css). The press lands on the descendant
@@ -34,6 +36,14 @@ const DRAG_THRESHOLD = 4
 // the cursor can't cross the silhouette boundary meaningfully within this window,
 // so we cache the last boolean and resample at most once per HIT_TEST_THROTTLE_MS.
 const HIT_TEST_THROTTLE_MS = 32
+// Drag-to-feed facial cues (Haru expressions f00..f07). Swap these two indices
+// if a different face reads better as "hungry" / "satisfied".
+const FEED_HUNGRY_EXPRESSION = 'f04'
+const FEED_SATISFIED_EXPRESSION = 'f03'
+// How long the satisfied face is held after a feed before reverting to neutral.
+const FEED_SATISFIED_HOLD_MS = 2500
+// Debounce for the spurious dragleave events that fire on internal boundaries.
+const DRAG_LEAVE_DEBOUNCE_MS = 120
 
 export function PetApp(): React.JSX.Element {
   // Live2DStage hands these up once the model is ready (null on error/dispose).
@@ -131,23 +141,73 @@ export function PetApp(): React.JSX.Element {
   }, [])
 
   useEffect(() => {
-    // 'dragover' preventDefault is MANDATORY or Chromium navigates the window
-    // to the dropped file:// URL and blanks the pet. 'drop' preventDefault
-    // likewise. Plan 2 is VISUAL-ONLY: if any files are present, play
-    // 'receive'. No OS path is read (no File.path / no preload bridge) and
-    // nothing is logged, stored, or sent over IPC — that is Plan 3's scope.
+    // craving = the pet is currently showing the "hungry" face for a hovering
+    // drag. leaveTimer debounces dragleave (it also fires on internal
+    // boundaries); satisfiedTimer reverts the post-feed "satisfied" face.
+    let craving = false
+    let leaveTimer: ReturnType<typeof setTimeout> | null = null
+    let satisfiedTimer: ReturnType<typeof setTimeout> | null = null
+
+    const clearLeave = (): void => {
+      if (leaveTimer !== null) {
+        clearTimeout(leaveTimer)
+        leaveTimer = null
+      }
+    }
+    const clearSatisfied = (): void => {
+      if (satisfiedTimer !== null) {
+        clearTimeout(satisfiedTimer)
+        satisfiedTimer = null
+      }
+    }
+
+    // 'dragover' preventDefault is MANDATORY or Chromium navigates the window to
+    // the dropped file:// URL and blanks the pet. While a file hovers, the pet
+    // looks toward it (updateCursor) and holds a hungry expression.
     const onDragOver = (e: DragEvent): void => {
       e.preventDefault()
+      clearLeave()
+      controllerRef.current?.updateCursor(e.clientX, e.clientY)
+      if (!craving) {
+        craving = true
+        clearSatisfied()
+        controllerRef.current?.setExpression(FEED_HUNGRY_EXPRESSION)
+      }
     }
+
+    // dragleave fires on internal boundaries too; debounce so a continuous
+    // dragover keeps the craving face, and only revert when the drag truly left.
+    const onDragLeave = (): void => {
+      clearLeave()
+      leaveTimer = setTimeout(() => {
+        leaveTimer = null
+        if (!craving) return
+        craving = false
+        controllerRef.current?.resetExpression()
+      }, DRAG_LEAVE_DEBOUNCE_MS)
+    }
+
     const onDrop = (e: DragEvent): void => {
       e.preventDefault()
+      clearLeave()
+      craving = false
       const files = e.dataTransfer?.files
-      if (!files || files.length === 0) return
-      // Visual feedback (Plan 2 behavior, PRESERVED) — fires even if ingest fails.
-      controllerRef.current?.playAction('receive')
-      // Plan 3: resolve each dropped file's real OS path in the preload. Iterate
-      // HERE in the renderer where the FileList is real — a FileList does NOT
-      // survive the contextBridge, but a single File passed per call does.
+      if (!files || files.length === 0) {
+        controllerRef.current?.resetExpression()
+        return
+      }
+      // Feed! Satisfied face + a lively reaction motion, held briefly then
+      // reverted. Fires even if the ensuing ingest fails (separate path).
+      const controller = controllerRef.current
+      controller?.playAction('react')
+      controller?.setExpression(FEED_SATISFIED_EXPRESSION)
+      clearSatisfied()
+      satisfiedTimer = setTimeout(() => {
+        satisfiedTimer = null
+        controllerRef.current?.resetExpression()
+      }, FEED_SATISFIED_HOLD_MS)
+      // Resolve each dropped file's real OS path (per-File: a FileList does not
+      // survive the contextBridge) and ingest into the vault.
       const paths: string[] = []
       for (const f of Array.from(files)) {
         const p = window.petApi.getPathForFile(f)
@@ -159,11 +219,16 @@ export function PetApp(): React.JSX.Element {
         })
       }
     }
+
     window.addEventListener('dragover', onDragOver)
+    window.addEventListener('dragleave', onDragLeave)
     window.addEventListener('drop', onDrop)
     return () => {
       window.removeEventListener('dragover', onDragOver)
+      window.removeEventListener('dragleave', onDragLeave)
       window.removeEventListener('drop', onDrop)
+      clearLeave()
+      clearSatisfied()
     }
   }, [])
 

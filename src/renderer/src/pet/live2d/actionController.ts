@@ -17,6 +17,10 @@ export interface ActionController {
   startIdle(): void
   stopIdle(): void
   updateCursor(clientX: number, clientY: number): void
+  /** Hold a Live2D expression (e.g. a "hungry" face during drag-to-feed). */
+  setExpression(name: string): void
+  /** Revert to the model's base face. */
+  resetExpression(): void
   dispose(): void
 }
 
@@ -162,11 +166,41 @@ export function createActionController(model: Live2DModelType): ActionController
     )
   }
 
+  function setExpression(name: string): void {
+    if (disposed) return
+    void model.expression(name)
+  }
+
+  function resetExpression(): void {
+    if (disposed) return
+    // Revert to the model's base face. pixi-live2d-display exposes
+    // resetExpression() on the expression manager; cast (same soft-typing as
+    // coreModel/internalModelEvents above) and guard so it no-ops if absent.
+    try {
+      const em = (
+        model.internalModel.motionManager as unknown as {
+          expressionManager?: { resetExpression?: () => void }
+        }
+      ).expressionManager
+      em?.resetExpression?.()
+    } catch {
+      /* best-effort: leave the current expression if reset is unavailable */
+    }
+  }
+
   function dispose(): void {
     disposed = true
     stopIdle()
     internalModelEvents.off('beforeModelUpdate', onBeforeUpdate)
   }
 
-  return { playAction, startIdle, stopIdle, updateCursor, dispose }
+  return {
+    playAction,
+    startIdle,
+    stopIdle,
+    updateCursor,
+    setExpression,
+    resetExpression,
+    dispose
+  }
 }

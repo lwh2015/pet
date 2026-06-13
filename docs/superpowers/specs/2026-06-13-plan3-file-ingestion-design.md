@@ -35,7 +35,8 @@
 ### 2.2 文件路径解析：`webUtils.getPathForFile`（`File.path` 已移除）
 
 - 非标准的 `File.path` **自 Electron 32 起被移除**，39 下读不到。获取拖入文件真实绝对路径的**唯一受支持方式是 `webUtils.getPathForFile(file)`**。
-- `webUtils` 是**渲染进程模块**，在 `contextIsolation: true` 下主世界拿不到 → **必须在 preload 调用**，把"接收一个 `File`、返回其路径"的函数经 `contextBridge` 暴露给渲染层。`File` 可作为结构化克隆类型从主世界传入 preload。
+- `webUtils` 是**渲染进程模块**，在 `contextIsolation: true` 下主世界拿不到 → **必须在 preload 调用**，把"接收一个 `File`、返回其路径"的函数经 `contextBridge` 暴露给渲染层。
+- **实现踩坑(已修复)**：**`FileList` 跨 `contextBridge` 会被清空**——渲染层把整个 `e.dataTransfer.files`(`FileList`)传给 preload 时，preload 里 `Array.from(files).length === 0`(items 丢失，`webUtils.getPathForFile` 拿不到文件，拖入静默失败)。**单个 `File` 能跨桥**(Electron 文档示例正是逐个 File 传)。所以**在渲染层遍历 `FileList`、逐个 `File` 调 preload 的 `getPathForFile(file)`**,不要把 `FileList`/`File[]` 整体传过去。
 - 另设**主进程 `dialog.showOpenDialog`**（面板「投喂文件」按钮），返回 `{ canceled, filePaths }`，与拖入分支汇合到同一个主进程 `ingest(path)`。这也是部分 macOS 上拖拽取路径偶发失败（electron/electron#44600）的可靠兜底。
 
 ### 2.3 Vault：sha256 内容寻址
