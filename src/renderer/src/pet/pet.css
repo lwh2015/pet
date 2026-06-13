@@ -36,3 +36,16 @@ body,
   user-select: none;
   line-height: 0;
 }
+
+/* Live2D canvas: full-window, fixed overlay. pointer-events:auto so native
+   'drop'/'dragover' and the alpha hit-test see the cursor; click-through for
+   transparent pixels is enforced by the alpha hit-test + setIgnoreMouseEvents,
+   not by CSS. Body stays fully transparent (rule above).
+   NOTE: no <canvas className="pet-canvas"> exists in the tree yet — Live2DStage
+   lands in a later group — so this selector is INERT after group 1; it is added
+   now so the canvas group can drop in without a CSS change. */
+.pet-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: auto;
+}
