@@ -45,17 +45,6 @@ export function togglePetVisibility(visible: boolean): boolean {
   return visible
 }
 
-/**
- * Force the pet window back to click-through (ignore mouse, forward events).
- * Used by the tray 'Reset interaction' action. Safe no-op when no pet window.
- */
-export function resetInteraction(): void {
-  const win = getPetWindow()
-  if (win) {
-    win.setIgnoreMouseEvents(true, { forward: true })
-  }
-}
-
 /** TEST-ONLY: clears the module-scope refs between unit tests. */
 export function __resetWindowManagerForTests(): void {
   petWindow = null

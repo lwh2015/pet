@@ -6,7 +6,6 @@ import {
   setPanelWindow,
   getPanelWindow,
   togglePetVisibility,
-  resetInteraction,
   __resetWindowManagerForTests
 } from './windowManager'
 
@@ -16,8 +15,6 @@ interface FakeWin {
   isDestroyed(): boolean
   show(): void
   hide(): void
-  setIgnoreMouseEvents(ignore: boolean, opts?: { forward: boolean }): void
-  ignoreCalls: Array<{ ignore: boolean; opts?: { forward: boolean } }>
 }
 
 function makeFakeWin(): FakeWin {
@@ -32,10 +29,6 @@ function makeFakeWin(): FakeWin {
     },
     hide() {
       this.shown = false
-    },
-    ignoreCalls: [],
-    setIgnoreMouseEvents(ignore, opts) {
-      this.ignoreCalls.push({ ignore, opts })
     }
   }
 }
@@ -89,16 +82,5 @@ describe('windowManager', () => {
   it('togglePetVisibility is a no-op returning the requested value when no window', () => {
     expect(togglePetVisibility(true)).toBe(true)
     expect(togglePetVisibility(false)).toBe(false)
-  })
-
-  it('resetInteraction calls setIgnoreMouseEvents(true,{forward:true}) on the pet window', () => {
-    const win = makeFakeWin()
-    setPetWindow(win as unknown as Electron.BrowserWindow)
-    resetInteraction()
-    expect(win.ignoreCalls).toEqual([{ ignore: true, opts: { forward: true } }])
-  })
-
-  it('resetInteraction is a safe no-op when no pet window', () => {
-    expect(() => resetInteraction()).not.toThrow()
   })
 })
