@@ -65,6 +65,9 @@ export const DEFAULT_ACTION_MAP: ActionMap = {
  * map (defaults to DEFAULT_ACTION_MAP). Total over ActionTag — never throws for
  * a valid tag. No pixi/electron, no I/O, no mutation.
  */
-export function resolveAction(tag: ActionTag, map: ActionMap = DEFAULT_ACTION_MAP): ActionMapEntry {
+export function resolveAction(
+  tag: ActionTag,
+  map: ActionMap = DEFAULT_ACTION_MAP
+): Readonly<ActionMapEntry> {
   return map[tag]
 }

@@ -9,6 +9,14 @@ import {
 const RECT = { left: 100, top: 50, width: 400, height: 300 }
 
 describe('normalizeCursorOffset', () => {
+  it('returns center (0,0) for a degenerate zero-size rect (no divide-by-zero)', () => {
+    const o = normalizeCursorOffset({ x: 5, y: 5 }, { left: 0, top: 0, width: 0, height: 0 })
+    // `=== 0` treats -0 and +0 as equal; the negated zero-axis can yield a
+    // harmless -0. What matters: no NaN/Infinity from the divide-by-zero guard.
+    expect(o.x === 0).toBe(true)
+    expect(o.y === 0).toBe(true)
+  })
+
   it('maps the rect center to (0,0)', () => {
     const o = normalizeCursorOffset({ x: 100 + 200, y: 50 + 150 }, RECT)
     expect(o.x).toBeCloseTo(0, 6)
