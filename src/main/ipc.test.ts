@@ -87,15 +87,47 @@ function makeDeps(store: ReturnType<typeof makeFakeStore>) {
   const win = makeFakeWindow()
   const showPanelWindow = vi.fn()
   const broadcastSettingsChanged = vi.fn()
+  const libraryStore = {
+    list: vi.fn(() => [] as never[]),
+    ingest: vi.fn(async (p: string) => ({
+      id: 1,
+      sha256: 'a'.repeat(64),
+      originalName: p,
+      ext: '.txt',
+      mime: 'text/plain',
+      sizeBytes: 3,
+      ingestedAt: '2026-06-13T00:00:00.000Z',
+      sourcePath: p
+    })),
+    remove: vi.fn(),
+    blobPathFor: vi.fn((id: number) => `/vault/${id}`),
+    materializeForOpen: vi.fn((id: number) => `/work/${id}/file.txt`)
+  }
+  const shell = { openPath: vi.fn(async () => ''), showItemInFolder: vi.fn() }
+  const dialog = { showOpenDialog: vi.fn(async () => ({ canceled: true, filePaths: [] as string[] })) }
+  const broadcastLibraryChanged = vi.fn()
   const deps: IpcDeps = {
     settingsStore: store as never,
     passthrough: makeFakePassthrough() as never,
     showPanelWindow,
     getPetWindow: () => win as never,
     broadcastSettingsChanged,
-    getAllWindows: () => [win as never]
+    getAllWindows: () => [win as never],
+    libraryStore: libraryStore as never,
+    shell: shell as never,
+    dialog: dialog as never,
+    broadcastLibraryChanged
   }
-  return { deps, win, showPanelWindow, broadcastSettingsChanged }
+  return {
+    deps,
+    win,
+    showPanelWindow,
+    broadcastSettingsChanged,
+    libraryStore,
+    shell,
+    dialog,
+    broadcastLibraryChanged
+  }
 }
 
 beforeEach(() => {
@@ -246,5 +278,104 @@ describe('registerIpcHandlers', () => {
     const listener = listeners.get(IPC.PET_OPEN_PANEL)!
     listener({} /* IpcMainEvent */)
     expect(showPanelWindow).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('registerIpcHandlers — library:*', () => {
+  it('registers handle for all library channels', () => {
+    const { deps } = makeDeps(makeFakeStore(BASE))
+    registerIpcHandlers(deps)
+    for (const ch of [
+      IPC.LIBRARY_LIST,
+      IPC.LIBRARY_INGEST,
+      IPC.LIBRARY_REMOVE,
+      IPC.LIBRARY_OPEN,
+      IPC.LIBRARY_REVEAL,
+      IPC.LIBRARY_PICK
+    ]) {
+      expect(handlers.has(ch)).toBe(true)
+    }
+  })
+
+  it('LIBRARY_LIST returns the store listing', async () => {
+    const { deps, libraryStore } = makeDeps(makeFakeStore(BASE))
+    libraryStore.list.mockReturnValueOnce([{ id: 7 }] as never)
+    registerIpcHandlers(deps)
+    const result = await handlers.get(IPC.LIBRARY_LIST)!({})
+    expect(result).toEqual([{ id: 7 }])
+  })
+
+  it('LIBRARY_INGEST maps each path to an ok result and broadcasts', async () => {
+    const { deps, broadcastLibraryChanged } = makeDeps(makeFakeStore(BASE))
+    registerIpcHandlers(deps)
+    const result = (await handlers.get(IPC.LIBRARY_INGEST)!({}, ['/a.txt', '/b.txt'])) as Array<{
+      ok: boolean
+    }>
+    expect(result).toHaveLength(2)
+    expect(result.every((r) => r.ok)).toBe(true)
+    expect(broadcastLibraryChanged).toHaveBeenCalledTimes(1)
+  })
+
+  it('LIBRARY_INGEST reports a failing path as { ok:false } and still broadcasts the ok ones', async () => {
+    const { deps, libraryStore, broadcastLibraryChanged } = makeDeps(makeFakeStore(BASE))
+    libraryStore.ingest
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce({ id: 2 } as never)
+    registerIpcHandlers(deps)
+    const result = (await handlers.get(IPC.LIBRARY_INGEST)!({}, ['/bad', '/good'])) as Array<{
+      ok: boolean
+      error?: string
+    }>
+    expect(result[0]).toMatchObject({ ok: false, error: 'boom' })
+    expect(result[1]).toMatchObject({ ok: true })
+    expect(broadcastLibraryChanged).toHaveBeenCalledTimes(1)
+  })
+
+  it('LIBRARY_INGEST does NOT broadcast when every path fails', async () => {
+    const { deps, libraryStore, broadcastLibraryChanged } = makeDeps(makeFakeStore(BASE))
+    libraryStore.ingest.mockRejectedValue(new Error('nope'))
+    registerIpcHandlers(deps)
+    await handlers.get(IPC.LIBRARY_INGEST)!({}, ['/x'])
+    expect(broadcastLibraryChanged).not.toHaveBeenCalled()
+  })
+
+  it('LIBRARY_REMOVE removes and broadcasts', async () => {
+    const { deps, libraryStore, broadcastLibraryChanged } = makeDeps(makeFakeStore(BASE))
+    registerIpcHandlers(deps)
+    await handlers.get(IPC.LIBRARY_REMOVE)!({}, 5)
+    expect(libraryStore.remove).toHaveBeenCalledWith(5)
+    expect(broadcastLibraryChanged).toHaveBeenCalledTimes(1)
+  })
+
+  it('LIBRARY_OPEN materializes then opens via shell', async () => {
+    const { deps, libraryStore, shell } = makeDeps(makeFakeStore(BASE))
+    registerIpcHandlers(deps)
+    await handlers.get(IPC.LIBRARY_OPEN)!({}, 3)
+    expect(libraryStore.materializeForOpen).toHaveBeenCalledWith(3)
+    expect(shell.openPath).toHaveBeenCalledWith('/work/3/file.txt')
+  })
+
+  it('LIBRARY_REVEAL shows the blob in the folder', async () => {
+    const { deps, shell } = makeDeps(makeFakeStore(BASE))
+    registerIpcHandlers(deps)
+    await handlers.get(IPC.LIBRARY_REVEAL)!({}, 4)
+    expect(shell.showItemInFolder).toHaveBeenCalledWith('/vault/4')
+  })
+
+  it('LIBRARY_PICK returns [] when the dialog is canceled', async () => {
+    const { deps } = makeDeps(makeFakeStore(BASE))
+    registerIpcHandlers(deps)
+    const result = await handlers.get(IPC.LIBRARY_PICK)!({})
+    expect(result).toEqual([])
+  })
+
+  it('LIBRARY_PICK ingests the chosen paths', async () => {
+    const { deps, dialog, broadcastLibraryChanged } = makeDeps(makeFakeStore(BASE))
+    dialog.showOpenDialog.mockResolvedValueOnce({ canceled: false, filePaths: ['/picked.txt'] })
+    registerIpcHandlers(deps)
+    const result = (await handlers.get(IPC.LIBRARY_PICK)!({})) as Array<{ ok: boolean }>
+    expect(result).toHaveLength(1)
+    expect(result[0].ok).toBe(true)
+    expect(broadcastLibraryChanged).toHaveBeenCalledTimes(1)
   })
 })
