@@ -1,22 +1,48 @@
-import { contextBridge } from 'electron'
+// Pet-window preload. Exposes window.petApi (the RendererApi surface) wrapping
+// ipcRenderer over the IPC channel-name constants. Later groups EXTEND this
+// object (setInteractive, drag.*, onPassthroughModeChanged); this is the base.
+import { contextBridge, ipcRenderer, type IpcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import { IPC } from '@shared/ipc'
+import type { Settings, SettingsChangedPayload } from '@shared/types'
 
-// Custom APIs for renderer
-const api = {}
+/**
+ * Pure factory for the petApi surface. Takes ipcRenderer as a parameter so the
+ * wiring is unit-testable without electron. Later groups add members here.
+ */
+export function buildPetApi(ipc: IpcRenderer) {
+  return {
+    getSettings(): Promise<Settings> {
+      return ipc.invoke(IPC.SETTINGS_GET)
+    },
+    setSettings(patch: Partial<Settings>): Promise<Settings> {
+      return ipc.invoke(IPC.SETTINGS_SET, patch)
+    },
+    openPanel(): void {
+      ipc.send(IPC.PET_OPEN_PANEL)
+    },
+    onSettingsChanged(cb: (settings: Settings) => void): () => void {
+      const listener = (_e: unknown, payload: SettingsChangedPayload): void =>
+        cb(payload.settings)
+      ipc.on(IPC.SETTINGS_CHANGED, listener)
+      return () => ipc.removeListener(IPC.SETTINGS_CHANGED, listener)
+    }
+  }
+}
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
+const petApi = buildPetApi(ipcRenderer)
+
+// contextIsolation:true -> expose via contextBridge.
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', api)
+    contextBridge.exposeInMainWorld('petApi', petApi)
   } catch (error) {
     console.error(error)
   }
 } else {
-  // @ts-ignore (define in dts)
+  // @ts-ignore (define on window when isolation is off)
   window.electron = electronAPI
-  // @ts-ignore (define in dts)
-  window.api = api
+  // @ts-ignore
+  window.petApi = petApi
 }
