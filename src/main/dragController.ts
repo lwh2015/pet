@@ -66,10 +66,7 @@ export function createDragController(
     if (!win || win.isDestroyed()) return
     const [x, y] = win.getPosition()
     const [width, height] = win.getSize()
-    const clamped = clampPositionToDisplays(
-      { x, y, width, height },
-      readDisplayBounds()
-    )
+    const clamped = clampPositionToDisplays({ x, y, width, height }, readDisplayBounds())
     if (clamped.x !== x || clamped.y !== y) {
       win.setPosition(clamped.x, clamped.y)
     }

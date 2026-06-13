@@ -1,18 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import {
-  PASSTHROUGH_MODES,
-  type PassthroughMode,
-  type Settings,
-  type TrayItemId
-} from './types'
+import { PASSTHROUGH_MODES, type PassthroughMode, type Settings, type TrayItemId } from './types'
 
 describe('shared/types', () => {
   it('PASSTHROUGH_MODES contains exactly the three modes in order', () => {
-    expect(PASSTHROUGH_MODES).toEqual([
-      'auto',
-      'locked-interactive',
-      'locked-passthrough'
-    ])
+    expect(PASSTHROUGH_MODES).toEqual(['auto', 'locked-interactive', 'locked-passthrough'])
   })
 
   it('PASSTHROUGH_MODES has no extra members', () => {

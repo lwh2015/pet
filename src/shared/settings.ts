@@ -24,10 +24,7 @@ export const DEFAULT_SETTINGS: Settings = {
 }
 
 function isPassthroughMode(value: unknown): value is PassthroughMode {
-  return (
-    typeof value === 'string' &&
-    (PASSTHROUGH_MODES as readonly string[]).includes(value)
-  )
+  return typeof value === 'string' && (PASSTHROUGH_MODES as readonly string[]).includes(value)
 }
 
 function isFiniteNumber(value: unknown): value is number {
@@ -65,9 +62,6 @@ export function mergeSettings(
     passthroughMode: isPassthroughMode(src.passthroughMode)
       ? src.passthroughMode
       : defaults.passthroughMode,
-    petVisible:
-      typeof src.petVisible === 'boolean'
-        ? src.petVisible
-        : defaults.petVisible
+    petVisible: typeof src.petVisible === 'boolean' ? src.petVisible : defaults.petVisible
   }
 }

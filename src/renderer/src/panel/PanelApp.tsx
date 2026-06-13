@@ -11,15 +11,12 @@ export function PanelApp(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined
     window.panelApi
       .getSettings()
       .then((s) => setSettings(s))
       .catch((e: unknown) => setError(String(e)))
-    unsubscribe = window.panelApi.onSettingsChanged((s) => setSettings(s))
-    return () => {
-      if (unsubscribe) unsubscribe()
-    }
+    const unsubscribe = window.panelApi.onSettingsChanged((s) => setSettings(s))
+    return () => unsubscribe()
   }, [])
 
   return (
@@ -30,9 +27,7 @@ export function PanelApp(): React.JSX.Element {
       ) : settings ? (
         <>
           <p className="panel__status">Settings loaded.</p>
-          <pre className="panel__settings">
-            {JSON.stringify(settings, null, 2)}
-          </pre>
+          <pre className="panel__settings">{JSON.stringify(settings, null, 2)}</pre>
         </>
       ) : (
         <p className="panel__status">Loading settings…</p>

@@ -96,6 +96,8 @@ describe('buildTrayMenuModel', () => {
     const model = buildTrayMenuModel(baseAuto)
     expect(model.find((i) => i.id === 'mode-auto')?.label).toBe('Auto (hit-test)')
     expect(model.find((i) => i.id === 'mode-locked-interactive')?.label).toBe('Always Interactive')
-    expect(model.find((i) => i.id === 'mode-locked-passthrough')?.label).toBe('Always Click-through')
+    expect(model.find((i) => i.id === 'mode-locked-passthrough')?.label).toBe(
+      'Always Click-through'
+    )
   })
 })

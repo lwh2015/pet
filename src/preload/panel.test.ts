@@ -23,11 +23,7 @@ const SAMPLE: Settings = {
 describe('buildPanelApi', () => {
   it('exposes ONLY getSettings, setSettings, onSettingsChanged', () => {
     const api = buildPanelApi(makeFakeIpc() as never)
-    expect(Object.keys(api).sort()).toEqual([
-      'getSettings',
-      'onSettingsChanged',
-      'setSettings'
-    ])
+    expect(Object.keys(api).sort()).toEqual(['getSettings', 'onSettingsChanged', 'setSettings'])
   })
 
   it('getSettings invokes IPC.SETTINGS_GET', async () => {
@@ -55,10 +51,7 @@ describe('buildPanelApi', () => {
     const received: Settings[] = []
     api.onSettingsChanged((s) => received.push(s))
     expect(ipc.on.mock.calls[0][0]).toBe(IPC.SETTINGS_CHANGED)
-    const handler = ipc.on.mock.calls[0][1] as (
-      e: unknown,
-      payload: { settings: Settings }
-    ) => void
+    const handler = ipc.on.mock.calls[0][1] as (e: unknown, payload: { settings: Settings }) => void
     handler({}, { settings: SAMPLE })
     expect(received).toEqual([SAMPLE])
   })

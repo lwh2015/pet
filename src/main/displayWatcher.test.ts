@@ -52,7 +52,12 @@ function makeWindow(
   pos: [number, number],
   size: [number, number]
 ): {
-  win: { getPosition: () => number[]; getSize: () => number[]; isDestroyed: () => boolean; setBounds: ReturnType<typeof vi.fn> }
+  win: {
+    getPosition: () => number[]
+    getSize: () => number[]
+    isDestroyed: () => boolean
+    setBounds: ReturnType<typeof vi.fn>
+  }
 } {
   const win = {
     getPosition: () => pos,
@@ -135,10 +140,7 @@ describe('startDisplayWatcher', () => {
 
     dispose()
 
-    expect(fakeScreen.removeListener).toHaveBeenCalledWith(
-      'display-removed',
-      expect.any(Function)
-    )
+    expect(fakeScreen.removeListener).toHaveBeenCalledWith('display-removed', expect.any(Function))
     expect(fakeScreen.removeListener).toHaveBeenCalledWith(
       'display-metrics-changed',
       expect.any(Function)

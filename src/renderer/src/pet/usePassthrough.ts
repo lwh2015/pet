@@ -68,16 +68,14 @@ export function usePassthrough(): void {
       }
     }
 
-    const unsubscribeMode = window.petApi.onPassthroughModeChanged(
-      ({ mode }) => {
-        modeRef.current = mode
-        if (mode !== 'auto') {
-          // Entering a lock mode: cancel any pending leave; main owns state now.
-          clearLeaveTimer()
-          lastReported.current = null
-        }
+    const unsubscribeMode = window.petApi.onPassthroughModeChanged(({ mode }) => {
+      modeRef.current = mode
+      if (mode !== 'auto') {
+        // Entering a lock mode: cancel any pending leave; main owns state now.
+        clearLeaveTimer()
+        lastReported.current = null
       }
-    )
+    })
 
     window.addEventListener('mousemove', onMouseMove)
 

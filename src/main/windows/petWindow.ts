@@ -82,10 +82,7 @@ export function createPetWindow(settings: Settings): BrowserWindow {
  * launch restore that createPetWindow performs inline.
  * Must be called AFTER app is ready (uses the screen module).
  */
-export function restorePetPosition(
-  win: BrowserWindow,
-  saved: PetPosition
-): void {
+export function restorePetPosition(win: BrowserWindow, saved: PetPosition): void {
   const clamped = clampPositionToDisplays(saved, readDisplayBounds())
   win.setBounds({
     x: clamped.x,

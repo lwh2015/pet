@@ -14,16 +14,8 @@ function reclamp(getWindow: () => BrowserWindow | null): void {
   if (!win || win.isDestroyed()) return
   const [x, y] = win.getPosition()
   const [width, height] = win.getSize()
-  const clamped = clampPositionToDisplays(
-    { x, y, width, height },
-    readDisplayBounds()
-  )
-  if (
-    clamped.x !== x ||
-    clamped.y !== y ||
-    clamped.width !== width ||
-    clamped.height !== height
-  ) {
+  const clamped = clampPositionToDisplays({ x, y, width, height }, readDisplayBounds())
+  if (clamped.x !== x || clamped.y !== y || clamped.width !== width || clamped.height !== height) {
     win.setBounds({
       x: clamped.x,
       y: clamped.y,
@@ -40,19 +32,10 @@ function reclamp(getWindow: () => BrowserWindow | null): void {
  * 6.4's bootstrap calls startDisplayWatcher(getPetWindow).
  * Must be called AFTER app.whenReady(). Returns a disposer.
  */
-export function startDisplayWatcher(
-  getWindow: () => BrowserWindow | null
-): () => void {
+export function startDisplayWatcher(getWindow: () => BrowserWindow | null): () => void {
   const onRemoved = (): void => reclamp(getWindow)
-  const onMetrics = (
-    _event: Event,
-    _display: Display,
-    changedMetrics: string[]
-  ): void => {
-    if (
-      changedMetrics.includes('bounds') ||
-      changedMetrics.includes('workArea')
-    ) {
+  const onMetrics = (_event: Event, _display: Display, changedMetrics: string[]): void => {
+    if (changedMetrics.includes('bounds') || changedMetrics.includes('workArea')) {
       reclamp(getWindow)
     }
   }

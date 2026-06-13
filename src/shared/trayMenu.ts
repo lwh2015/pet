@@ -4,12 +4,7 @@
 // The main process maps the returned TrayMenuModel to Menu.buildFromTemplate;
 // this builder stays electron-free and unit-testable.
 // ============================================================================
-import type {
-  TrayMenuModel,
-  TrayMenuItem,
-  TrayMenuState,
-  PassthroughMode
-} from './types'
+import type { TrayMenuModel, TrayMenuItem, TrayMenuState, PassthroughMode } from './types'
 
 function separator(): TrayMenuItem {
   return { type: 'separator' }
@@ -43,18 +38,8 @@ export function buildTrayMenuModel(state: TrayMenuState): TrayMenuModel {
     },
     separator(),
     modeRadio('mode-auto', 'Auto (hit-test)', 'auto', state.mode),
-    modeRadio(
-      'mode-locked-interactive',
-      'Always Interactive',
-      'locked-interactive',
-      state.mode
-    ),
-    modeRadio(
-      'mode-locked-passthrough',
-      'Always Click-through',
-      'locked-passthrough',
-      state.mode
-    ),
+    modeRadio('mode-locked-interactive', 'Always Interactive', 'locked-interactive', state.mode),
+    modeRadio('mode-locked-passthrough', 'Always Click-through', 'locked-passthrough', state.mode),
     { id: 'reset-interaction', type: 'normal', label: 'Reset Interaction' },
     separator(),
     { id: 'open-panel', type: 'normal', label: 'Open Panel' },

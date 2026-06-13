@@ -23,10 +23,7 @@ export default defineConfig({
       electron: resolve(__dirname, 'test/electron-stub.ts'),
       // Same reason: this package imports named electron runtime exports at its
       // module top; the preload modules only use its opaque electronAPI glue.
-      '@electron-toolkit/preload': resolve(
-        __dirname,
-        'test/electron-toolkit-preload-stub.ts'
-      )
+      '@electron-toolkit/preload': resolve(__dirname, 'test/electron-toolkit-preload-stub.ts')
     }
   }
 })

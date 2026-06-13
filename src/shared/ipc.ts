@@ -42,9 +42,7 @@ export interface RendererApi {
   getSettings(): Promise<Settings>
   setSettings(patch: Partial<Settings>): Promise<Settings>
   onSettingsChanged(cb: (settings: Settings) => void): Unsubscribe
-  onPassthroughModeChanged(
-    cb: (payload: PassthroughModeChangedPayload) => void
-  ): Unsubscribe
+  onPassthroughModeChanged(cb: (payload: PassthroughModeChangedPayload) => void): Unsubscribe
 }
 
 /**

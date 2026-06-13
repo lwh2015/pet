@@ -10,11 +10,7 @@ function makeFakeIpc() {
     sendCalls: [] as Array<{ channel: string; args: unknown[] }>,
     onCalls: [] as Array<{ channel: string }>,
     removeCalls: [] as Array<{ channel: string }>,
-    invoke: vi.fn(function (
-      this: void,
-      channel: string,
-      ...args: unknown[]
-    ): Promise<unknown> {
+    invoke: vi.fn(function (this: void, channel: string, ...args: unknown[]): Promise<unknown> {
       // Explicit Promise<unknown> return type keeps the mock's resolved type
       // permissive so the verbatim mockResolvedValueOnce(SAMPLE) call sites
       // typecheck under tsconfig.node (which includes *.test.ts). Runtime
@@ -69,10 +65,7 @@ describe('buildPetApi', () => {
     expect(ipc.on).toHaveBeenCalledTimes(1)
     expect(ipc.on.mock.calls[0][0]).toBe(IPC.SETTINGS_CHANGED)
     // Simulate main broadcasting the event (event arg, then payload).
-    const handler = ipc.on.mock.calls[0][1] as (
-      e: unknown,
-      payload: { settings: Settings }
-    ) => void
+    const handler = ipc.on.mock.calls[0][1] as (e: unknown, payload: { settings: Settings }) => void
     handler({}, { settings: SAMPLE })
     expect(received).toEqual([SAMPLE])
   })

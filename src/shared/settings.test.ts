@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  DEFAULT_SETTINGS,
-  DEFAULT_PET_POSITION,
-  SETTINGS_VERSION,
-  mergeSettings
-} from './settings'
+import { DEFAULT_SETTINGS, DEFAULT_PET_POSITION, SETTINGS_VERSION, mergeSettings } from './settings'
 import type { Settings } from './types'
 
 describe('DEFAULT_SETTINGS', () => {
@@ -52,8 +47,7 @@ describe('mergeSettings', () => {
 
   it('accepts a valid passthroughMode', () => {
     expect(
-      mergeSettings(DEFAULT_SETTINGS, { passthroughMode: 'locked-passthrough' })
-        .passthroughMode
+      mergeSettings(DEFAULT_SETTINGS, { passthroughMode: 'locked-passthrough' }).passthroughMode
     ).toBe('locked-passthrough')
   })
 

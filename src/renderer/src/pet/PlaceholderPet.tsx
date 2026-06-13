@@ -13,7 +13,13 @@ export function PlaceholderPet(): React.JSX.Element {
           <circle cx="76" cy="52" r="9" fill="#ffffff" />
           <circle cx="44" cy="54" r="4" fill="#1a1a1a" />
           <circle cx="76" cy="54" r="4" fill="#1a1a1a" />
-          <path d="M44 80 Q60 94 76 80" fill="none" stroke="#1a1a1a" strokeWidth="4" strokeLinecap="round" />
+          <path
+            d="M44 80 Q60 94 76 80"
+            fill="none"
+            stroke="#1a1a1a"
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
         </svg>
       </div>
     </div>

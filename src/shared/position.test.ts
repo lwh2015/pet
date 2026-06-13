@@ -13,12 +13,12 @@ const secondary: DisplayBounds = {
   workArea: { x: 1920, y: 0, width: 1280, height: 1024 }
 }
 
-const pos = (
-  x: number,
-  y: number,
-  width = 300,
-  height = 300
-): PetPosition => ({ x, y, width, height })
+const pos = (x: number, y: number, width = 300, height = 300): PetPosition => ({
+  x,
+  y,
+  width,
+  height
+})
 
 describe('pickDisplayForPosition', () => {
   it('picks the display the window mostly overlaps', () => {

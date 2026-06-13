@@ -29,10 +29,7 @@ function overlapArea(a: Rect, b: Rect): number {
  * with pos. Ties and zero-overlap resolve to displays[0]. Throws if displays is
  * empty. Pure.
  */
-export function pickDisplayForPosition(
-  pos: PetPosition,
-  displays: DisplayBounds[]
-): DisplayBounds {
+export function pickDisplayForPosition(pos: PetPosition, displays: DisplayBounds[]): DisplayBounds {
   if (displays.length === 0) {
     throw new Error('pickDisplayForPosition: displays must not be empty')
   }
@@ -59,10 +56,7 @@ export function pickDisplayForPosition(
  * clamps x/y so the whole window sits inside. Throws if displays is empty.
  * Pure.
  */
-export function clampPositionToDisplays(
-  pos: PetPosition,
-  displays: DisplayBounds[]
-): PetPosition {
+export function clampPositionToDisplays(pos: PetPosition, displays: DisplayBounds[]): PetPosition {
   if (displays.length === 0) {
     throw new Error('clampPositionToDisplays: displays must not be empty')
   }

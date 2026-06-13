@@ -15,10 +15,7 @@ import type { PassthroughMode } from './types'
  *
  * Pure: no electron, no I/O, no mutation.
  */
-export function resolveIgnoreMouse(
-  mode: PassthroughMode,
-  overInteractive: boolean
-): boolean {
+export function resolveIgnoreMouse(mode: PassthroughMode, overInteractive: boolean): boolean {
   switch (mode) {
     case 'locked-interactive':
       return false

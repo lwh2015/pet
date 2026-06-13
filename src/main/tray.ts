@@ -4,7 +4,14 @@
 // GC'd and disappears), and rebuilds its context menu from the pure
 // buildTrayMenuModel(state) whenever app state changes. GLUE — verified manually.
 // ============================================================================
-import { app, Tray, Menu, nativeImage, type NativeImage, type MenuItemConstructorOptions } from 'electron'
+import {
+  app,
+  Tray,
+  Menu,
+  nativeImage,
+  type NativeImage,
+  type MenuItemConstructorOptions
+} from 'electron'
 import { join } from 'node:path'
 import { buildTrayMenuModel } from '@shared/trayMenu'
 import type { TrayMenuState, TrayItemId, PassthroughMode } from '@shared/types'

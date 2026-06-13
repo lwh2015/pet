@@ -34,8 +34,7 @@ const { screen } = vi.hoisted(() => {
 })
 vi.mock('electron', () => ({
   ipcMain: {
-    handle: (channel: string, fn: (...a: unknown[]) => unknown) =>
-      handle(channel, fn),
+    handle: (channel: string, fn: (...a: unknown[]) => unknown) => handle(channel, fn),
     on: (channel: string, fn: (...a: unknown[]) => void) => on(channel, fn)
   },
   screen

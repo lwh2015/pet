@@ -14,14 +14,12 @@ import './pet.css'
 
 const DRAG_THRESHOLD = 4
 
-export function PetApp() {
+export function PetApp(): React.JSX.Element {
   usePassthrough()
 
   // Tracks the active gesture: anchor screen coords + whether it crossed the
   // click-vs-drag threshold. null when no button is held.
-  const dragState = useRef<{ x: number; y: number; dragging: boolean } | null>(
-    null
-  )
+  const dragState = useRef<{ x: number; y: number; dragging: boolean } | null>(null)
 
   const handlePetMouseDown = (e: React.MouseEvent): void => {
     if (e.button !== 0) return // left button only
@@ -37,10 +35,7 @@ export function PetApp() {
     const handleMove = (e: MouseEvent): void => {
       const s = dragState.current
       if (!s) return
-      if (
-        !s.dragging &&
-        Math.hypot(e.screenX - s.x, e.screenY - s.y) > DRAG_THRESHOLD
-      ) {
+      if (!s.dragging && Math.hypot(e.screenX - s.x, e.screenY - s.y) > DRAG_THRESHOLD) {
         s.dragging = true
       }
       if (s.dragging) {

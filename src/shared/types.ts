@@ -31,10 +31,7 @@ export interface DisplayBounds {
  *  - 'locked-interactive'  : window is always interactive (never click-through).
  *  - 'locked-passthrough'  : window is always click-through (ignores the pet).
  */
-export type PassthroughMode =
-  | 'auto'
-  | 'locked-interactive'
-  | 'locked-passthrough'
+export type PassthroughMode = 'auto' | 'locked-interactive' | 'locked-passthrough'
 
 export const PASSTHROUGH_MODES: readonly PassthroughMode[] = [
   'auto',

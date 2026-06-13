@@ -4,11 +4,7 @@
 import { contextBridge, ipcRenderer, type IpcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { IPC, type RendererApi, type Unsubscribe } from '@shared/ipc'
-import type {
-  Settings,
-  SettingsChangedPayload,
-  PassthroughModeChangedPayload
-} from '@shared/types'
+import type { Settings, SettingsChangedPayload, PassthroughModeChangedPayload } from '@shared/types'
 
 /**
  * Pure factory for the petApi surface. Takes ipcRenderer as a parameter so the
@@ -26,8 +22,7 @@ export function buildPetApi(ipc: IpcRenderer): RendererApi {
       ipc.send(IPC.PET_OPEN_PANEL)
     },
     onSettingsChanged(cb: (settings: Settings) => void): () => void {
-      const listener = (_e: unknown, payload: SettingsChangedPayload): void =>
-        cb(payload.settings)
+      const listener = (_e: unknown, payload: SettingsChangedPayload): void => cb(payload.settings)
       ipc.on(IPC.SETTINGS_CHANGED, listener)
       return () => ipc.removeListener(IPC.SETTINGS_CHANGED, listener)
     },
@@ -64,6 +59,6 @@ if (process.contextIsolated) {
 } else {
   // @ts-ignore (define on window when isolation is off)
   window.electron = electronAPI
-  // @ts-ignore
+  // @ts-ignore define petApi on window when contextIsolation is disabled
   window.petApi = petApi
 }

@@ -4,10 +4,11 @@
 // no openPanel — the panel never controls the pet directly.
 import { contextBridge, ipcRenderer, type IpcRenderer } from 'electron'
 import { IPC } from '@shared/ipc'
+import type { PanelApi } from '@shared/ipc'
 import type { Settings, SettingsChangedPayload } from '@shared/types'
 
 /** Pure factory for the panelApi surface (injected ipcRenderer for testing). */
-export function buildPanelApi(ipc: IpcRenderer) {
+export function buildPanelApi(ipc: IpcRenderer): PanelApi {
   return {
     getSettings(): Promise<Settings> {
       return ipc.invoke(IPC.SETTINGS_GET)
@@ -16,8 +17,7 @@ export function buildPanelApi(ipc: IpcRenderer) {
       return ipc.invoke(IPC.SETTINGS_SET, patch)
     },
     onSettingsChanged(cb: (settings: Settings) => void): () => void {
-      const listener = (_e: unknown, payload: SettingsChangedPayload): void =>
-        cb(payload.settings)
+      const listener = (_e: unknown, payload: SettingsChangedPayload): void => cb(payload.settings)
       ipc.on(IPC.SETTINGS_CHANGED, listener)
       return () => ipc.removeListener(IPC.SETTINGS_CHANGED, listener)
     }
