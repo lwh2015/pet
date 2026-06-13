@@ -1,74 +1,119 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+import { app } from 'electron'
+import { IPC } from '@shared/ipc'
+import type { PassthroughMode, PassthroughModeChangedPayload } from '@shared/types'
+import { getPetWindow, getPanelWindow, togglePetVisibility } from './windows/windowManager'
+import { showPanelWindow } from './windows/panelWindow'
+import { createPetWindow } from './windows/petWindow'
+import { createSettingsStore } from './settingsStore'
+import { createPassthroughController } from './passthrough'
+import { registerIpcHandlers } from './ipc'
+import { startDisplayWatcher } from './displayWatcher'
+import { createTray, type TrayHandlers } from './tray'
 
-function createWindow(): void {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
-    show: false,
-    autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+// --- Single-instance lock (before any window creation, R5) --------------------
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    const pet = getPetWindow()
+    if (pet && !pet.isDestroyed()) {
+      if (!pet.isVisible()) pet.show()
+      pet.focus()
+    }
+    const panel = getPanelWindow()
+    if (panel && !panel.isDestroyed()) {
+      if (panel.isMinimized()) panel.restore()
+      panel.show()
+      panel.focus()
     }
   })
-
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
-  })
-
-  mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
-  })
-
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
-  }
+  bootstrap()
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+function bootstrap(): void {
+  app.whenReady().then(() => {
+    // macOS: pure accessory (no Dock). Pairs with LSUIElement for no-flash start.
+    if (process.platform === 'darwin') {
+      app.setActivationPolicy('accessory')
+    }
 
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
+    // 1) Settings store + load.
+    const settingsStore = createSettingsStore(app.getPath('userData'))
+    let settings = settingsStore.load()
+
+    // 2) Pet window (factory restores clamped position, registers ref, honors petVisible).
+    createPetWindow(settings)
+
+    // 3) Passthrough controller bound to the live pet window; init from settings.
+    const passthrough = createPassthroughController(getPetWindow)
+    passthrough.setMode(settings.passthroughMode)
+    // Resting state: in 'auto' with overInteractive=false -> ignore=true+forward.
+    // Apply unconditionally (valid pre-show; do NOT add a late ready-to-show here).
+    passthrough.apply()
+
+    // 4) Broadcast helper: full Settings to every live window (destroyed-safe).
+    const broadcastSettingsChanged = (): void => {
+      const payload = { settings: settingsStore.get() }
+      for (const w of [getPetWindow(), getPanelWindow()]) {
+        if (w && !w.isDestroyed()) w.webContents.send(IPC.SETTINGS_CHANGED, payload)
+      }
+    }
+
+    // 5) IPC: base (settings:get/set, pet:open-panel) + extensions (setInteractive, drag).
+    //    Returns { flushPersist } (the drag-controller flush handle). One deps shape.
+    const ipcHandles = registerIpcHandlers({
+      settingsStore,
+      passthrough,
+      showPanelWindow,
+      getPetWindow,
+      broadcastSettingsChanged,
+      getAllWindows: () => [getPetWindow(), getPanelWindow()]
+    })
+
+    // 6) Display watcher (re-clamp on monitor changes). Returns a disposer.
+    const stopDisplayWatcher = startDisplayWatcher(getPetWindow)
+
+    // 7) Passthrough-mode broadcast to the pet renderer (always via IPC constant).
+    const broadcastPassthroughMode = (mode: PassthroughMode): void => {
+      getPetWindow()?.webContents.send(IPC.PET_PASSTHROUGH_MODE_CHANGED, {
+        mode
+      } satisfies PassthroughModeChangedPayload)
+    }
+
+    // 8) Tray.
+    const handlers: TrayHandlers = {
+      getState: () => ({ mode: passthrough.getMode(), petVisible: settings.petVisible }),
+      onToggleVisibility: () => {
+        settings = settingsStore.set({ petVisible: !settings.petVisible })
+        togglePetVisibility(settings.petVisible)
+        broadcastSettingsChanged()
+      },
+      onSetMode: (mode) => {
+        passthrough.setMode(mode)
+        passthrough.apply()
+        settings = settingsStore.set({ passthroughMode: mode })
+        broadcastSettingsChanged()
+        broadcastPassthroughMode(mode)
+      },
+      onResetInteraction: () => passthrough.reset(),
+      onOpenPanel: () => showPanelWindow(),
+      onQuit: () => app.quit()
+    }
+    createTray(handlers)
+
+    // 9) Flush pending drag-persist on quit, then stop the watcher.
+    app.on('before-quit', () => {
+      ipcHandles.flushPersist()
+      stopDisplayWatcher()
+    })
+
+    app.on('activate', () => {
+      if (!getPetWindow()) createPetWindow(settings)
+    })
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
-
-  createWindow()
-
-  app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  app.on('window-all-closed', () => {
+    // Overlay/tray app: do NOT quit when the panel closes. Quit only via tray.
   })
-})
-
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+}
