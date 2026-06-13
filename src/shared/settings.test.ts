@@ -121,4 +121,29 @@ describe('mergeSettings', () => {
     })
     expect(result.version).toBe(DEFAULT_SETTINGS.version)
   })
+
+  it('preserves the default petPosition when partial.petPosition is null', () => {
+    const result = mergeSettings(DEFAULT_SETTINGS, {
+      petPosition: null as unknown as Settings['petPosition']
+    })
+    expect(result.petPosition).toEqual(DEFAULT_PET_POSITION)
+  })
+
+  it('preserves the default petPosition when partial.petPosition is absent', () => {
+    const result = mergeSettings(DEFAULT_SETTINGS, { petVisible: false })
+    expect(result.petPosition).toEqual(DEFAULT_PET_POSITION)
+  })
+
+  it('returns a fresh petPosition, not the DEFAULT_SETTINGS reference', () => {
+    const result = mergeSettings(DEFAULT_SETTINGS, {})
+    expect(result.petPosition).not.toBe(DEFAULT_SETTINGS.petPosition)
+  })
+
+  it('returns a fresh petPosition, not the supplied partial reference', () => {
+    const partialPosition = { x: 500, y: 600 } as Settings['petPosition']
+    const result = mergeSettings(DEFAULT_SETTINGS, {
+      petPosition: partialPosition
+    })
+    expect(result.petPosition).not.toBe(partialPosition)
+  })
 })

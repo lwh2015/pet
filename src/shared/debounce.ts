@@ -26,7 +26,10 @@ export function debounce<A extends unknown[]>(
     }
     timer = setTimeout(() => {
       timer = null
-      const callArgs = pendingArgs as A
+      if (pendingArgs === null) {
+        return
+      }
+      const callArgs = pendingArgs
       pendingArgs = null
       fn(...callArgs)
     }, waitMs)
@@ -41,12 +44,12 @@ export function debounce<A extends unknown[]>(
   }
 
   debounced.flush = (): void => {
-    if (timer === null) {
+    if (timer === null || pendingArgs === null) {
       return
     }
     clearTimeout(timer)
     timer = null
-    const callArgs = pendingArgs as A
+    const callArgs = pendingArgs
     pendingArgs = null
     fn(...callArgs)
   }

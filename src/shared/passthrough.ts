@@ -2,7 +2,7 @@
 // src/shared/passthrough.ts
 // Pure passthrough state machine. ELECTRON-FREE, no side effects.
 // ============================================================================
-import { type PassthroughMode } from './types'
+import type { PassthroughMode } from './types'
 
 /**
  * Decide the `ignore` boolean to feed

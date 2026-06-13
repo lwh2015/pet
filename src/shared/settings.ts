@@ -2,12 +2,8 @@
 // src/shared/settings.ts
 // DEFAULT_SETTINGS + pure merge/validate logic. ELECTRON-FREE, FS-FREE.
 // ============================================================================
-import {
-  type Settings,
-  type PassthroughMode,
-  type PetPosition,
-  PASSTHROUGH_MODES
-} from './types'
+import type { Settings, PassthroughMode, PetPosition } from './types'
+import { PASSTHROUGH_MODES } from './types'
 
 /** Bumped only when the persisted Settings shape changes incompatibly. */
 export const SETTINGS_VERSION = 1
@@ -43,6 +39,10 @@ function isFiniteNumber(value: unknown): value is number {
  * known-good defaults object. Unknown keys are ignored; invalid values fall
  * back to the default for that field. Always returns a complete, valid
  * Settings — never throws. Pure (no I/O).
+ *
+ * Note: this only validates shape/type/positivity of petPosition. Absolute
+ * on-screen position bounds (fitting within a connected display's workArea) are
+ * enforced downstream by clampPositionToDisplays in ./position, not here.
  */
 export function mergeSettings(
   defaults: Settings,

@@ -42,6 +42,10 @@ describe('pickDisplayForPosition', () => {
     const p = pos(1770, 100)
     expect(pickDisplayForPosition(p, [primary, secondary]).id).toBe(1)
   })
+
+  it('throws when displays is empty', () => {
+    expect(() => pickDisplayForPosition(pos(0, 0), [])).toThrow()
+  })
 })
 
 describe('clampPositionToDisplays', () => {
@@ -105,5 +109,16 @@ describe('clampPositionToDisplays', () => {
     const result = clampPositionToDisplays(pos(0, 0, 300, 5000), [primary])
     expect(result.height).toBe(1040)
     expect(result.y).toBe(0)
+  })
+
+  it('re-homes onto displays[0] when overlapping none of several displays', () => {
+    // pos(5000, 5000) overlaps neither display -> deliberate fallback to
+    // displays[0] (primary). Pin current behavior: result lands within primary.
+    const result = clampPositionToDisplays(pos(5000, 5000), [primary, secondary])
+    const wa = primary.workArea
+    expect(result.x).toBeGreaterThanOrEqual(wa.x)
+    expect(result.x + result.width).toBeLessThanOrEqual(wa.x + wa.width)
+    expect(result.y).toBeGreaterThanOrEqual(wa.y)
+    expect(result.y + result.height).toBeLessThanOrEqual(wa.y + wa.height)
   })
 })

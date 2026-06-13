@@ -26,12 +26,20 @@ function overlapArea(a: Rect, b: Rect): number {
 
 /**
  * Returns the DisplayBounds whose workArea has the largest rectangular overlap
- * with pos. Ties and zero-overlap resolve to displays[0]. Pure.
+ * with pos. Ties and zero-overlap resolve to displays[0]. Throws if displays is
+ * empty. Pure.
  */
 export function pickDisplayForPosition(
   pos: PetPosition,
   displays: DisplayBounds[]
 ): DisplayBounds {
+  if (displays.length === 0) {
+    throw new Error('pickDisplayForPosition: displays must not be empty')
+  }
+  // Deliberate fallback: best/bestArea seed from displays[0], so when the saved
+  // position overlaps NO display (every overlapArea is 0, never > bestArea of 0)
+  // we return displays[0]. We do NOT switch to nearest-by-distance — that is out
+  // of scope for this plan; clamping into displays[0] is the intended re-home.
   let best = displays[0]
   let bestArea = overlapArea(pos, displays[0].workArea)
   for (let i = 1; i < displays.length; i++) {
