@@ -1,0 +1,89 @@
+// ============================================================================
+// src/main/dragController.ts
+// Manual-drag glue for the transparent pet window. Coexists with mouse
+// passthrough (we deliberately avoid -webkit-app-region: drag — see plan note).
+// On drag-end the new bounds are clamped into connected displays and the
+// position is debounce-persisted to settings via the injected persistPosition
+// sink. The controller never broadcasts itself; persist+broadcast policy lives
+// in the sink (see ipc.ts), so flushPersist() at quit time stays safe.
+// ============================================================================
+import { screen, type BrowserWindow, type Display } from 'electron'
+import { clampPositionToDisplays } from '@shared/position'
+import { debounce } from '@shared/debounce'
+import type { PetPosition, DisplayBounds } from '@shared/types'
+
+/** Persist debounce window (ms) — coalesces the end-of-drag write. */
+const PERSIST_DEBOUNCE_MS = 400
+
+function toDisplayBounds(displays: Display[]): DisplayBounds[] {
+  return displays.map((d) => ({
+    id: d.id,
+    workArea: {
+      x: d.workArea.x,
+      y: d.workArea.y,
+      width: d.workArea.width,
+      height: d.workArea.height
+    }
+  }))
+}
+
+export interface DragController {
+  onStart(): void
+  onMove(): void
+  onEnd(): void
+  /** Flush any pending debounced persist (e.g. before quit). */
+  flushPersist(): void
+}
+
+/**
+ * Creates the manual-drag controller.
+ * @param getWindow       returns the live pet BrowserWindow (or null).
+ * @param persistPosition called with the final clamped PetPosition to save.
+ */
+export function createDragController(
+  getWindow: () => BrowserWindow | null,
+  persistPosition: (pos: PetPosition) => void
+): DragController {
+  // Fixed cursor->window offset captured at drag-start; null when not dragging.
+  let offset: { dx: number; dy: number } | null = null
+
+  const debouncedPersist = debounce((pos: PetPosition) => {
+    persistPosition(pos)
+  }, PERSIST_DEBOUNCE_MS)
+
+  const onStart = (): void => {
+    const win = getWindow()
+    if (!win || win.isDestroyed()) return
+    const cursor = screen.getCursorScreenPoint()
+    const [wx, wy] = win.getPosition()
+    offset = { dx: cursor.x - wx, dy: cursor.y - wy }
+  }
+
+  const onMove = (): void => {
+    if (!offset) return
+    const win = getWindow()
+    if (!win || win.isDestroyed()) return
+    const cursor = screen.getCursorScreenPoint()
+    win.setPosition(cursor.x - offset.dx, cursor.y - offset.dy)
+  }
+
+  const onEnd = (): void => {
+    offset = null
+    const win = getWindow()
+    if (!win || win.isDestroyed()) return
+    const [x, y] = win.getPosition()
+    const [width, height] = win.getSize()
+    const displays = toDisplayBounds(screen.getAllDisplays())
+    const clamped = clampPositionToDisplays({ x, y, width, height }, displays)
+    if (clamped.x !== x || clamped.y !== y) {
+      win.setPosition(clamped.x, clamped.y)
+    }
+    debouncedPersist(clamped)
+  }
+
+  const flushPersist = (): void => {
+    debouncedPersist.flush()
+  }
+
+  return { onStart, onMove, onEnd, flushPersist }
+}

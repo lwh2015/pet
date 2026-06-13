@@ -11,6 +11,8 @@
 import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc'
 import type { Settings } from '@shared/types'
+// 5.3 adds:
+import { createDragController } from './dragController'
 
 /**
  * The dependencies registerIpcHandlers needs, injected so the handler logic
@@ -75,6 +77,19 @@ export function registerIpcHandlers(deps: IpcDeps): IpcHandles {
     deps.passthrough.setOverInteractive(Boolean(payload?.interactive))
   )
 
-  // Placeholder flush; 5.3 replaces this with () => dragController.flushPersist().
-  return { flushPersist: () => {} }
+  // --- 5.3: manual-drag controller + channels ---
+  // Persist sink (canonical, contract §5/§7): write the clamped position to disk,
+  // then broadcast full Settings to every live window via the injected, destroyed-
+  // safe broadcaster. The controller never broadcasts itself, so the quit-time
+  // flush path can persist even after windows are destroyed.
+  const dragController = createDragController(deps.getPetWindow, (pos) => {
+    deps.settingsStore.set({ petPosition: pos })
+    deps.broadcastSettingsChanged()
+  })
+
+  ipcMain.on(IPC.PET_DRAG_START, () => dragController.onStart())
+  ipcMain.on(IPC.PET_DRAG_MOVE, () => dragController.onMove())
+  ipcMain.on(IPC.PET_DRAG_END, () => dragController.onEnd())
+
+  return { flushPersist: () => dragController.flushPersist() }
 }

@@ -41,6 +41,12 @@ export function buildPetApi(ipc: IpcRenderer) {
       const l = (_e: unknown, p: PassthroughModeChangedPayload): void => cb(p)
       ipc.on(IPC.PET_PASSTHROUGH_MODE_CHANGED, l)
       return () => ipc.removeListener(IPC.PET_PASSTHROUGH_MODE_CHANGED, l)
+    },
+    // --- 5.3 adds ---
+    drag: {
+      start: () => ipc.send(IPC.PET_DRAG_START),
+      move: () => ipc.send(IPC.PET_DRAG_MOVE),
+      end: () => ipc.send(IPC.PET_DRAG_END)
     }
   }
 }
