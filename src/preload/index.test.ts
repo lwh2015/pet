@@ -10,7 +10,15 @@ function makeFakeIpc() {
     sendCalls: [] as Array<{ channel: string; args: unknown[] }>,
     onCalls: [] as Array<{ channel: string }>,
     removeCalls: [] as Array<{ channel: string }>,
-    invoke: vi.fn(function (this: void, channel: string, ...args: unknown[]) {
+    invoke: vi.fn(function (
+      this: void,
+      channel: string,
+      ...args: unknown[]
+    ): Promise<unknown> {
+      // Explicit Promise<unknown> return type keeps the mock's resolved type
+      // permissive so the verbatim mockResolvedValueOnce(SAMPLE) call sites
+      // typecheck under tsconfig.node (which includes *.test.ts). Runtime
+      // object is unchanged.
       return Promise.resolve({ channel, args })
     }),
     send: vi.fn(),
