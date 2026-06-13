@@ -9,7 +9,8 @@ pixi/Live2D/GL/DOM glue is verified by hand here (pure logic is unit-tested in
 
 - [ ] `src/renderer/public/live2dcubismcore.min.js` exists (vendored Cubism Core).
 - [ ] `src/renderer/public/models/haru/haru.model3.json` exists with its
-      siblings (`.moc3`, `textures/`, `motions/`, `expressions/`).
+      siblings (`haru_greeter_t03.moc3`, the `haru_greeter_t03.2048/` texture
+      folder, `motion/`, `expressions/`).
 - [ ] `npm install` has been run (pixi.js@^7.4.3, pixi-live2d-display-advanced@^1.1.0).
 
 ## How to run
@@ -34,7 +35,7 @@ The pet window appears transparent/frameless over the desktop. Open DevTools
 
 ### 2. Greet on appear
 - [ ] On first render the model plays its greeting motion/expression once
-      (the `greet` tag: `TapBody` group + expression `F01`), then settles.
+      (the `greet` tag: `Tap` group + expression `f00`), then settles.
 
 ### 3. Idle micro-actions
 - [ ] Leave the pet untouched for 10-30s: it periodically plays a small idle
@@ -52,7 +53,7 @@ The pet window appears transparent/frameless over the desktop. Open DevTools
 
 ### 5. Tap -> react
 - [ ] Single-click ON the model body (a click, not a drag): it plays a
-      reaction (the `react` tag, `TapBody` group) that interrupts idle.
+      reaction (the `react` tag, `Tap` group, motion only) that interrupts idle.
 - [ ] Click-and-release on a TRANSPARENT area (not over the model silhouette):
       NOTHING happens — no reaction, and the click passes through to whatever
       is behind the window (Plan-1 passthrough behavior preserved).
@@ -83,7 +84,7 @@ The pet window appears transparent/frameless over the desktop. Open DevTools
 
 ### 8. File-drop -> receive
 - [ ] Drag a file from the OS file manager and drop it ONTO the model body:
-      the model plays the `receive` motion/expression (`TapBody` + `F05`).
+      the model plays the `receive` motion/expression (`Tap` + `f05`).
 - [ ] The window does NOT navigate away / blank out (dragover+drop
       preventDefault working).
 - [ ] No file is read, stored, logged, or sent anywhere: Plan 2 file-drop is
