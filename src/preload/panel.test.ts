@@ -21,9 +21,60 @@ const SAMPLE: Settings = {
 }
 
 describe('buildPanelApi', () => {
-  it('exposes ONLY getSettings, setSettings, onSettingsChanged', () => {
+  it('exposes the settings + library surface', () => {
     const api = buildPanelApi(makeFakeIpc() as never)
-    expect(Object.keys(api).sort()).toEqual(['getSettings', 'onSettingsChanged', 'setSettings'])
+    expect(Object.keys(api).sort()).toEqual([
+      'getPathForFile',
+      'getSettings',
+      'library',
+      'onLibraryChanged',
+      'onSettingsChanged',
+      'setSettings'
+    ])
+    expect(Object.keys(api.library).sort()).toEqual([
+      'ingestPaths',
+      'list',
+      'open',
+      'pick',
+      'remove',
+      'reveal'
+    ])
+  })
+
+  it('getPathForFile delegates to the injected resolver (single File)', () => {
+    const pathResolver = vi.fn((f: { name: string }) => `/p/${f.name}`)
+    const api = buildPanelApi(makeFakeIpc() as never, pathResolver as never)
+    expect(api.getPathForFile({ name: 'a' } as never)).toBe('/p/a')
+  })
+
+  it('library.list/remove/open/reveal/pick invoke their channels', async () => {
+    const ipc = makeFakeIpc()
+    const api = buildPanelApi(ipc as never)
+    await api.library.list()
+    await api.library.ingestPaths(['/a'])
+    await api.library.remove(1)
+    await api.library.open(2)
+    await api.library.reveal(3)
+    await api.library.pick()
+    expect(ipc.invoke).toHaveBeenCalledWith(IPC.LIBRARY_LIST)
+    expect(ipc.invoke).toHaveBeenCalledWith(IPC.LIBRARY_INGEST, ['/a'])
+    expect(ipc.invoke).toHaveBeenCalledWith(IPC.LIBRARY_REMOVE, 1)
+    expect(ipc.invoke).toHaveBeenCalledWith(IPC.LIBRARY_OPEN, 2)
+    expect(ipc.invoke).toHaveBeenCalledWith(IPC.LIBRARY_REVEAL, 3)
+    expect(ipc.invoke).toHaveBeenCalledWith(IPC.LIBRARY_PICK)
+  })
+
+  it('onLibraryChanged subscribes to IPC.LIBRARY_CHANGED and returns an unsubscribe', () => {
+    const ipc = makeFakeIpc()
+    const api = buildPanelApi(ipc as never)
+    const cb = vi.fn()
+    const off = api.onLibraryChanged(cb)
+    expect(ipc.on.mock.calls[0][0]).toBe(IPC.LIBRARY_CHANGED)
+    const handler = ipc.on.mock.calls[0][1] as () => void
+    handler()
+    expect(cb).toHaveBeenCalledTimes(1)
+    off()
+    expect(ipc.removeListener).toHaveBeenCalledWith(IPC.LIBRARY_CHANGED, expect.any(Function))
   })
 
   it('getSettings invokes IPC.SETTINGS_GET', async () => {

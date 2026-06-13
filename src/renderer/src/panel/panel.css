@@ -46,3 +46,107 @@ body {
   font-family: ui-monospace, 'Cascadia Code', monospace;
   font-size: 12px;
 }
+
+.library {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.library__bar {
+  display: flex;
+  gap: 8px;
+}
+
+.library__search {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  font: inherit;
+}
+
+.library__feed {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #3b82f6;
+  color: #fff;
+  cursor: pointer;
+}
+.library__feed:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.library__drop {
+  min-height: 120px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  padding: 8px;
+}
+.library__drop--over {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.library__empty {
+  opacity: 0.6;
+  text-align: center;
+  margin: 36px 0;
+}
+
+.library__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.library__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.library__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.library__name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.library__sub {
+  opacity: 0.6;
+  font-size: 12px;
+}
+
+.library__actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.library__actions button {
+  padding: 4px 10px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  cursor: pointer;
+}
+.library__danger {
+  color: #fca5a5;
+}

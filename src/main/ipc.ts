@@ -10,7 +10,7 @@
 // placeholder with the real () => dragController.flushPersist().
 import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc'
-import type { Settings } from '@shared/types'
+import type { Settings, FileRecord, IngestResult } from '@shared/types'
 // 5.3 adds:
 import { createDragController } from './dragController'
 
@@ -36,6 +36,25 @@ export interface IpcDeps {
   broadcastSettingsChanged: () => void
   /** All live windows to broadcast settings:changed to (may contain nulls). */
   getAllWindows: () => Array<Electron.BrowserWindow | null>
+  /** File library store (createLibraryStore result; structural subset). */
+  libraryStore: {
+    list(): FileRecord[]
+    ingest(absPath: string): Promise<FileRecord>
+    remove(id: number): void
+    blobPathFor(id: number): string | undefined
+    materializeForOpen(id: number): string | undefined
+  }
+  /**
+   * Electron shell/dialog seams. Typed as Pick<Electron.*> so the RAW electron
+   * `shell`/`dialog` objects inject directly (index.ts) with no adapter — a plain
+   * `{ showOpenDialog(options): ... }` shape is NOT assignable from electron's
+   * OVERLOADED `dialog.showOpenDialog` (arity mismatch, TS2322). Tests pass fakes
+   * cast `as never`, so the Pick types don't burden the test harness.
+   */
+  shell: Pick<Electron.Shell, 'openPath' | 'showItemInFolder'>
+  dialog: Pick<Electron.Dialog, 'showOpenDialog'>
+  /** Broadcast library:changed to the panel (destroyed-safe; owned by index.ts). */
+  broadcastLibraryChanged: () => void
 }
 
 /**
@@ -90,6 +109,55 @@ export function registerIpcHandlers(deps: IpcDeps): IpcHandles {
   ipcMain.on(IPC.PET_DRAG_START, () => dragController.onStart())
   ipcMain.on(IPC.PET_DRAG_MOVE, () => dragController.onMove())
   ipcMain.on(IPC.PET_DRAG_END, () => dragController.onEnd())
+
+  // --- Plan 3: file library / ingestion ---
+  // Shared ingest loop: each path -> ok/record or error; broadcast if any ok.
+  const ingestAll = async (paths: string[]): Promise<IngestResult[]> => {
+    const results: IngestResult[] = []
+    for (const p of paths) {
+      try {
+        results.push({ ok: true, record: await deps.libraryStore.ingest(p) })
+      } catch (err) {
+        results.push({
+          ok: false,
+          sourcePath: p,
+          error: err instanceof Error ? err.message : String(err)
+        })
+      }
+    }
+    if (results.some((r) => r.ok)) deps.broadcastLibraryChanged()
+    return results
+  }
+
+  ipcMain.handle(IPC.LIBRARY_LIST, () => deps.libraryStore.list())
+
+  ipcMain.handle(IPC.LIBRARY_INGEST, (_event, ...args: unknown[]) => {
+    const paths = Array.isArray(args[0]) ? (args[0] as string[]) : []
+    return ingestAll(paths)
+  })
+
+  ipcMain.handle(IPC.LIBRARY_REMOVE, (_event, ...args: unknown[]) => {
+    deps.libraryStore.remove(Number(args[0]))
+    deps.broadcastLibraryChanged()
+  })
+
+  ipcMain.handle(IPC.LIBRARY_OPEN, async (_event, ...args: unknown[]) => {
+    const p = deps.libraryStore.materializeForOpen(Number(args[0]))
+    if (p) await deps.shell.openPath(p)
+  })
+
+  ipcMain.handle(IPC.LIBRARY_REVEAL, (_event, ...args: unknown[]) => {
+    const p = deps.libraryStore.blobPathFor(Number(args[0]))
+    if (p) deps.shell.showItemInFolder(p)
+  })
+
+  ipcMain.handle(IPC.LIBRARY_PICK, async () => {
+    const { canceled, filePaths } = await deps.dialog.showOpenDialog({
+      properties: ['openFile', 'multiSelections']
+    })
+    if (canceled || filePaths.length === 0) return []
+    return ingestAll(filePaths)
+  })
 
   return { flushPersist: () => dragController.flushPersist() }
 }

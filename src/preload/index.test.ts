@@ -78,4 +78,20 @@ describe('buildPetApi', () => {
     expect(ipc.removeListener).toHaveBeenCalledTimes(1)
     expect(ipc.removeListener.mock.calls[0][0]).toBe(IPC.SETTINGS_CHANGED)
   })
+
+  it('getPathForFile delegates to the injected resolver (single File)', () => {
+    const ipc = makeFakeIpc()
+    const pathResolver = vi.fn((f: { name: string }) => `/abs/${f.name}`)
+    const api = buildPetApi(ipc as never, pathResolver as never)
+    expect(api.getPathForFile({ name: 'a' } as never)).toBe('/abs/a')
+    expect(pathResolver).toHaveBeenCalledTimes(1)
+  })
+
+  it('ingestPaths invokes IPC.LIBRARY_INGEST with the paths', async () => {
+    const ipc = makeFakeIpc()
+    ipc.invoke.mockResolvedValueOnce([])
+    const api = buildPetApi(ipc as never)
+    await api.ingestPaths(['/abs/a'])
+    expect(ipc.invoke).toHaveBeenCalledWith(IPC.LIBRARY_INGEST, ['/abs/a'])
+  })
 })
