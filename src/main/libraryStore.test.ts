@@ -150,6 +150,14 @@ describe('createLibraryStore', () => {
     store.dispose()
   })
 
+  it('clears stale work/ materialized copies on construction', () => {
+    mkdirSync(join(dir, 'work', '99'), { recursive: true })
+    writeFileSync(join(dir, 'work', '99', 'old.txt'), 'stale')
+    const store = createLibraryStore(dir)
+    expect(existsSync(join(dir, 'work', '99'))).toBe(false)
+    store.dispose()
+  })
+
   it('persists across store instances (data survives reopen)', async () => {
     const store1 = createLibraryStore(dir)
     await store1.ingest(writeSource('persist.txt', 'keep'))

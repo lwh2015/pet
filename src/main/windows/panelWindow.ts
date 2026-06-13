@@ -46,6 +46,11 @@ export function createPanelWindow(): BrowserWindow {
     void win.loadFile(join(__dirname, '../renderer/panel.html'))
   }
 
+  // Harden the panel file-library drop zone (Plan 3): a dropped file:// must
+  // never navigate the panel window away from its app route.
+  win.webContents.on('will-navigate', (e) => e.preventDefault())
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+
   // Register the single panel ref in windowManager. No local module ref and no
   // 'closed' handler: getPanelWindow() already returns null for a destroyed
   // window via its isDestroyed() guard.

@@ -72,6 +72,12 @@ export function createPetWindow(settings: Settings): BrowserWindow {
       .catch((err) => console.error('pet renderer load failed', err))
   }
 
+  // Harden the file-drop ingestion (Plan 3): if a dropped file:// ever slips past
+  // the renderer's preventDefault, it must NOT navigate this privileged window
+  // (which would blank the transparent pet and load arbitrary local content).
+  win.webContents.on('will-navigate', (e) => e.preventDefault())
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+
   return win
 }
 

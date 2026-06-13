@@ -14,7 +14,8 @@ import {
   existsSync,
   unlinkSync,
   copyFileSync,
-  readdirSync
+  readdirSync,
+  rmSync
 } from 'node:fs'
 import { pipeline } from 'node:stream/promises'
 import { join, extname, basename, resolve as resolvePath, sep } from 'node:path'
@@ -73,6 +74,7 @@ export function createLibraryStore(
   mkdirSync(blobsDir, { recursive: true })
   mkdirSync(tmpDir, { recursive: true })
   sweepTmp()
+  sweepWork()
 
   const db = new DatabaseSync(dbPath)
   db.exec('PRAGMA journal_mode = WAL')
@@ -97,6 +99,17 @@ export function createLibraryStore(
     if (!existsSync(tmpDir)) return
     for (const name of readdirSync(tmpDir)) {
       if (name.endsWith('.part')) safeUnlink(join(tmpDir, name))
+    }
+  }
+
+  // Clear stale materialized copies from previous sessions. work/ is a cache of
+  // hash-named blobs re-exported under their original filename for Open; without
+  // this sweep it would grow unbounded across sessions (one copy per Open).
+  function sweepWork(): void {
+    try {
+      rmSync(workDir, { recursive: true, force: true })
+    } catch {
+      /* best-effort cleanup */
     }
   }
 
@@ -230,6 +243,11 @@ export function createLibraryStore(
   }
 
   function dispose(): void {
+    try {
+      db.exec('PRAGMA wal_checkpoint(TRUNCATE)') // fold the -wal back before closing
+    } catch {
+      /* best-effort */
+    }
     db.close()
   }
 

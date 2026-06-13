@@ -15,11 +15,18 @@ export function FileLibrary(): React.JSX.Element {
   const [dragOver, setDragOver] = useState(false)
   const [busy, setBusy] = useState(false)
   const dropRef = useRef<HTMLDivElement>(null)
+  // Monotonic request id: rapid library:changed events launch overlapping list()
+  // invokes that may resolve out of order; ignore any resolution that is not the
+  // latest so a stale (shorter) list never clobbers a newer one.
+  const refreshSeq = useRef(0)
 
   const refresh = useCallback((): void => {
+    const seq = ++refreshSeq.current
     window.panelApi.library
       .list()
-      .then(setItems)
+      .then((list) => {
+        if (seq === refreshSeq.current) setItems(list)
+      })
       .catch((e: unknown) => console.error('[FileLibrary] list failed', e))
   }, [])
 
@@ -37,6 +44,8 @@ export function FileLibrary(): React.JSX.Element {
         const results = await window.panelApi.library.ingestPaths(paths)
         const failed = results.filter((r) => !r.ok)
         if (failed.length > 0) console.warn('[FileLibrary] some ingests failed', failed)
+      } catch (e) {
+        console.error('[FileLibrary] ingest failed', e)
       } finally {
         setBusy(false)
         refresh()
@@ -49,6 +58,8 @@ export function FileLibrary(): React.JSX.Element {
     setBusy(true)
     try {
       await window.panelApi.library.pick()
+    } catch (e) {
+      console.error('[FileLibrary] feed failed', e)
     } finally {
       setBusy(false)
       refresh()
