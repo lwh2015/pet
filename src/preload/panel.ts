@@ -1,14 +1,15 @@
 // D:\aicode\pet\src\preload\panel.ts
-// Panel-window preload. Exposes window.panelApi: a STRICT subset of the
-// renderer surface (read/write settings + subscribe). No drag, no passthrough,
-// no openPanel — the panel never controls the pet directly.
-import { contextBridge, ipcRenderer, type IpcRenderer } from 'electron'
+// Panel-window preload. window.panelApi: settings subset + the file library.
+import { contextBridge, ipcRenderer, webUtils, type IpcRenderer } from 'electron'
 import { IPC } from '@shared/ipc'
 import type { PanelApi } from '@shared/ipc'
 import type { Settings, SettingsChangedPayload } from '@shared/types'
 
-/** Pure factory for the panelApi surface (injected ipcRenderer for testing). */
-export function buildPanelApi(ipc: IpcRenderer): PanelApi {
+/** Pure factory for the panelApi surface (injected ipcRenderer + path resolver). */
+export function buildPanelApi(
+  ipc: IpcRenderer,
+  getPathForFile: (file: File) => string = (file) => webUtils.getPathForFile(file)
+): PanelApi {
   return {
     getSettings(): Promise<Settings> {
       return ipc.invoke(IPC.SETTINGS_GET)
@@ -20,6 +21,28 @@ export function buildPanelApi(ipc: IpcRenderer): PanelApi {
       const listener = (_e: unknown, payload: SettingsChangedPayload): void => cb(payload.settings)
       ipc.on(IPC.SETTINGS_CHANGED, listener)
       return () => ipc.removeListener(IPC.SETTINGS_CHANGED, listener)
+    },
+    // --- Plan 3 ---
+    resolveDroppedPaths(files: FileList | File[]): string[] {
+      const out: string[] = []
+      for (const f of Array.from(files)) {
+        const p = getPathForFile(f)
+        if (p) out.push(p)
+      }
+      return out
+    },
+    library: {
+      list: () => ipc.invoke(IPC.LIBRARY_LIST),
+      ingestPaths: (paths: string[]) => ipc.invoke(IPC.LIBRARY_INGEST, paths),
+      remove: (id: number) => ipc.invoke(IPC.LIBRARY_REMOVE, id),
+      open: (id: number) => ipc.invoke(IPC.LIBRARY_OPEN, id),
+      reveal: (id: number) => ipc.invoke(IPC.LIBRARY_REVEAL, id),
+      pick: () => ipc.invoke(IPC.LIBRARY_PICK)
+    },
+    onLibraryChanged(cb: () => void): () => void {
+      const listener = (): void => cb()
+      ipc.on(IPC.LIBRARY_CHANGED, listener)
+      return () => ipc.removeListener(IPC.LIBRARY_CHANGED, listener)
     }
   }
 }
