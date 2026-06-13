@@ -112,7 +112,9 @@ describe('createLibraryStore', () => {
     await expect(store.ingest(join(srcDir, 'nope.txt'))).rejects.toThrow()
     mkdirSync(join(srcDir, 'adir'))
     await expect(store.ingest(join(srcDir, 'adir'))).rejects.toThrow()
-    await expect(store.ingest(writeSource('big.txt', 'too many bytes'))).rejects.toThrow(/too large/i)
+    await expect(store.ingest(writeSource('big.txt', 'too many bytes'))).rejects.toThrow(
+      /too large/i
+    )
     expect(store.list()).toHaveLength(0)
     store.dispose()
   })

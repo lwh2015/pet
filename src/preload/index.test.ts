@@ -81,9 +81,15 @@ describe('buildPetApi', () => {
 
   it('resolveDroppedPaths maps File objects through getPathForFile, dropping empties', () => {
     const ipc = makeFakeIpc()
-    const getPathForFile = vi.fn((f: { name: string }) => (f.name === 'empty' ? '' : `/abs/${f.name}`))
+    const getPathForFile = vi.fn((f: { name: string }) =>
+      f.name === 'empty' ? '' : `/abs/${f.name}`
+    )
     const api = buildPetApi(ipc as never, getPathForFile as never)
-    const paths = api.resolveDroppedPaths([{ name: 'a' }, { name: 'empty' }, { name: 'b' }] as never)
+    const paths = api.resolveDroppedPaths([
+      { name: 'a' },
+      { name: 'empty' },
+      { name: 'b' }
+    ] as never)
     expect(paths).toEqual(['/abs/a', '/abs/b'])
   })
 

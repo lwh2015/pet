@@ -18,7 +18,12 @@ function rec(p: Partial<FileRecord>): FileRecord {
 
 describe('filterFiles', () => {
   const items = [
-    rec({ id: 1, originalName: 'Vacation Budget.xlsx', ext: '.xlsx', mime: 'application/vnd.ms-excel' }),
+    rec({
+      id: 1,
+      originalName: 'Vacation Budget.xlsx',
+      ext: '.xlsx',
+      mime: 'application/vnd.ms-excel'
+    }),
     rec({ id: 2, originalName: 'notes.md', ext: '.md', mime: 'text/markdown' }),
     rec({ id: 3, originalName: 'photo.png', ext: '.png', mime: 'image/png' })
   ]

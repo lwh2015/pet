@@ -104,7 +104,9 @@ function makeDeps(store: ReturnType<typeof makeFakeStore>) {
     materializeForOpen: vi.fn((id: number) => `/work/${id}/file.txt`)
   }
   const shell = { openPath: vi.fn(async () => ''), showItemInFolder: vi.fn() }
-  const dialog = { showOpenDialog: vi.fn(async () => ({ canceled: true, filePaths: [] as string[] })) }
+  const dialog = {
+    showOpenDialog: vi.fn(async () => ({ canceled: true, filePaths: [] as string[] }))
+  }
   const broadcastLibraryChanged = vi.fn()
   const deps: IpcDeps = {
     settingsStore: store as never,
