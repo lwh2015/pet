@@ -59,8 +59,8 @@ CREATE TABLE IF NOT EXISTS files (
   id            INTEGER PRIMARY KEY,
   sha256        TEXT    NOT NULL,        -- 64 位十六进制；与 blob 路径对应
   original_name TEXT    NOT NULL,        -- 显示名 + 扩展名，如 "季度预算.xlsx"
-  ext           TEXT,                    -- ".xlsx"（path.extname 小写，便于过滤/图标）
-  mime          TEXT,                    -- 按扩展名映射的尽力而为类型
+  ext           TEXT    NOT NULL DEFAULT '', -- ".xlsx"（path.extname 小写，便于过滤/图标）
+  mime          TEXT    NOT NULL DEFAULT '', -- 按扩展名映射的尽力而为类型
   size_bytes    INTEGER NOT NULL,
   ingested_at   TEXT    NOT NULL,        -- ISO 8601
   source_path   TEXT                     -- 原始绝对路径，仅作溯源
@@ -131,7 +131,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_files_sha_name ON files(sha256, original_n
 
 主→渲染广播（`webContents.send` + `ipcRenderer.on`，返回 `Unsubscribe`）：
 
-- `library:changed` — 通知**面板窗**重新 `library:list`（payload 可空或带变更 id）。宠物窗不订阅（其 `receive` 反馈是本地触发，见 §1 范围）。
+- `library:changed` — 通知**面板窗**重新 `library:list`（payload 可空或带变更 id）。宠物窗不订阅（其 `receive` 反馈是本地触发，见 §1 范围）。实现上由注入的 `broadcastLibraryChanged()` 接缝发出（mirror 现有 `broadcastSettingsChanged`，闭包持有 `getPanelWindow`），而非给 `IpcDeps` 单加 `getPanelWindow`。
 
 ## 6. 打开/显示文件（内容寻址与"真实文件名"的协调）
 
