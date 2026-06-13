@@ -54,7 +54,11 @@ export function useLive2DModel(params: UseLive2DModelParams): UseLive2DModelResu
           antialias: true,
           autoDensity: true,
           resolution: window.devicePixelRatio || 1,
-          preserveDrawingBuffer: true
+          preserveDrawingBuffer: true,
+          // sharedTicker so app.ticker === PIXI.Ticker.shared — the SAME ticker
+          // the model's autoUpdate runs on. Without it the model keeps simulating
+          // when Live2DStage stops app.ticker on hide (it'd only halt rendering).
+          sharedTicker: true
         })
 
         const loaded = await Live2DModel.from(modelUrl, { autoInteract: false, autoUpdate: true })
