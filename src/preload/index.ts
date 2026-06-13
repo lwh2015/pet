@@ -1,16 +1,24 @@
 // Pet-window preload. Exposes window.petApi (the RendererApi surface) wrapping
 // ipcRenderer over the IPC channel-name constants. Later groups EXTEND this
 // object (setInteractive, drag.*, onPassthroughModeChanged); this is the base.
-import { contextBridge, ipcRenderer, type IpcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils, type IpcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { IPC, type RendererApi, type Unsubscribe } from '@shared/ipc'
-import type { Settings, SettingsChangedPayload, PassthroughModeChangedPayload } from '@shared/types'
+import type {
+  Settings,
+  SettingsChangedPayload,
+  PassthroughModeChangedPayload,
+  IngestResult
+} from '@shared/types'
 
 /**
  * Pure factory for the petApi surface. Takes ipcRenderer as a parameter so the
  * wiring is unit-testable without electron. Later groups add members here.
  */
-export function buildPetApi(ipc: IpcRenderer): RendererApi {
+export function buildPetApi(
+  ipc: IpcRenderer,
+  getPathForFile: (file: File) => string = (file) => webUtils.getPathForFile(file)
+): RendererApi {
   return {
     getSettings(): Promise<Settings> {
       return ipc.invoke(IPC.SETTINGS_GET)
@@ -42,6 +50,18 @@ export function buildPetApi(ipc: IpcRenderer): RendererApi {
       start: () => ipc.send(IPC.PET_DRAG_START),
       move: () => ipc.send(IPC.PET_DRAG_MOVE),
       end: () => ipc.send(IPC.PET_DRAG_END)
+    },
+    // --- Plan 3 adds ---
+    resolveDroppedPaths(files: FileList | File[]): string[] {
+      const out: string[] = []
+      for (const f of Array.from(files)) {
+        const p = getPathForFile(f)
+        if (p) out.push(p)
+      }
+      return out
+    },
+    ingestPaths(paths: string[]): Promise<IngestResult[]> {
+      return ipc.invoke(IPC.LIBRARY_INGEST, paths)
     }
   }
 }
