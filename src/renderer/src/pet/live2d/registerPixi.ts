@@ -6,10 +6,18 @@
 // runtime bundled). Importing this module first guarantees window.PIXI is set
 // before useLive2DModel calls Live2DModel.from.
 import * as PIXI from 'pixi.js'
+// Patch PixiJS to avoid new Function()/eval. The pet window's CSP is strict
+// (script-src 'self', NO 'unsafe-eval'); pixi v7's renderer generates shader
+// programs via new Function(), so Live2DModel.from would throw "Current
+// environment does not allow unsafe-eval" when it creates the renderer.
+// @pixi/unsafe-eval self-installs on import (since 7.1.0) and rewrites those
+// systems, keeping the strict CSP. This side-effect import MUST be evaluated
+// before any PIXI.Application/renderer is created — registerPixi is imported
+// (side-effect) at the top of useLive2DModel, before it boots the app.
+import '@pixi/unsafe-eval'
 
-// The full pixi.js bundle path: the plugin reads window.PIXI.Ticker for
-// autoUpdate. Set once; guarded so React StrictMode re-imports are no-ops
-// (ES modules are singletons, but the guard documents intent).
+// The plugin reads window.PIXI.Ticker for autoUpdate. Set once; guarded so
+// re-imports are no-ops (ES modules are singletons; the guard documents intent).
 declare global {
   var __PET_PIXI_REGISTERED__: boolean | undefined
 }

@@ -26,6 +26,7 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@pixi/unsafe-eval": "~7.4.0",
     "pixi-live2d-display-advanced": "^1.1.0",
     "pixi.js": "^7.4.3"
   },
