@@ -69,6 +69,12 @@ export function registerIpcHandlers(deps: IpcDeps): IpcHandles {
     deps.showPanelWindow()
   })
 
+  // pet:setInteractive — fire-and-forget hit-test result from the pet renderer.
+  // Gated by resolveIgnoreMouse inside the controller: honored only in 'auto'.
+  ipcMain.on(IPC.PET_SET_INTERACTIVE, (_e, payload) =>
+    deps.passthrough.setOverInteractive(Boolean(payload?.interactive))
+  )
+
   // Placeholder flush; 5.3 replaces this with () => dragController.flushPersist().
   return { flushPersist: () => {} }
 }

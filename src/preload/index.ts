@@ -3,8 +3,12 @@
 // object (setInteractive, drag.*, onPassthroughModeChanged); this is the base.
 import { contextBridge, ipcRenderer, type IpcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { IPC } from '@shared/ipc'
-import type { Settings, SettingsChangedPayload } from '@shared/types'
+import { IPC, type Unsubscribe } from '@shared/ipc'
+import type {
+  Settings,
+  SettingsChangedPayload,
+  PassthroughModeChangedPayload
+} from '@shared/types'
 
 /**
  * Pure factory for the petApi surface. Takes ipcRenderer as a parameter so the
@@ -26,6 +30,17 @@ export function buildPetApi(ipc: IpcRenderer) {
         cb(payload.settings)
       ipc.on(IPC.SETTINGS_CHANGED, listener)
       return () => ipc.removeListener(IPC.SETTINGS_CHANGED, listener)
+    },
+    // --- 4.4 adds ---
+    setInteractive: (interactive: boolean): void => {
+      ipc.send(IPC.PET_SET_INTERACTIVE, { interactive })
+    },
+    onPassthroughModeChanged: (
+      cb: (payload: PassthroughModeChangedPayload) => void
+    ): Unsubscribe => {
+      const l = (_e: unknown, p: PassthroughModeChangedPayload): void => cb(p)
+      ipc.on(IPC.PET_PASSTHROUGH_MODE_CHANGED, l)
+      return () => ipc.removeListener(IPC.PET_PASSTHROUGH_MODE_CHANGED, l)
     }
   }
 }
