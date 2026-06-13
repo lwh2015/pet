@@ -3,7 +3,7 @@
 // object (setInteractive, drag.*, onPassthroughModeChanged); this is the base.
 import { contextBridge, ipcRenderer, type IpcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { IPC, type Unsubscribe } from '@shared/ipc'
+import { IPC, type RendererApi, type Unsubscribe } from '@shared/ipc'
 import type {
   Settings,
   SettingsChangedPayload,
@@ -14,7 +14,7 @@ import type {
  * Pure factory for the petApi surface. Takes ipcRenderer as a parameter so the
  * wiring is unit-testable without electron. Later groups add members here.
  */
-export function buildPetApi(ipc: IpcRenderer) {
+export function buildPetApi(ipc: IpcRenderer): RendererApi {
   return {
     getSettings(): Promise<Settings> {
       return ipc.invoke(IPC.SETTINGS_GET)

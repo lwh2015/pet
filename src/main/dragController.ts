@@ -7,25 +7,14 @@
 // sink. The controller never broadcasts itself; persist+broadcast policy lives
 // in the sink (see ipc.ts), so flushPersist() at quit time stays safe.
 // ============================================================================
-import { screen, type BrowserWindow, type Display } from 'electron'
+import { screen, type BrowserWindow } from 'electron'
 import { clampPositionToDisplays } from '@shared/position'
 import { debounce } from '@shared/debounce'
-import type { PetPosition, DisplayBounds } from '@shared/types'
+import type { PetPosition } from '@shared/types'
+import { readDisplayBounds } from './displays'
 
 /** Persist debounce window (ms) — coalesces the end-of-drag write. */
 const PERSIST_DEBOUNCE_MS = 400
-
-function toDisplayBounds(displays: Display[]): DisplayBounds[] {
-  return displays.map((d) => ({
-    id: d.id,
-    workArea: {
-      x: d.workArea.x,
-      y: d.workArea.y,
-      width: d.workArea.width,
-      height: d.workArea.height
-    }
-  }))
-}
 
 export interface DragController {
   onStart(): void
@@ -68,13 +57,19 @@ export function createDragController(
   }
 
   const onEnd = (): void => {
+    // Gate on an in-progress gesture: a stray drag-end with no preceding
+    // drag-start (offset === null) must not clamp or schedule a persist.
+    const wasDragging = offset !== null
     offset = null
+    if (!wasDragging) return
     const win = getWindow()
     if (!win || win.isDestroyed()) return
     const [x, y] = win.getPosition()
     const [width, height] = win.getSize()
-    const displays = toDisplayBounds(screen.getAllDisplays())
-    const clamped = clampPositionToDisplays({ x, y, width, height }, displays)
+    const clamped = clampPositionToDisplays(
+      { x, y, width, height },
+      readDisplayBounds()
+    )
     if (clamped.x !== x || clamped.y !== y) {
       win.setPosition(clamped.x, clamped.y)
     }

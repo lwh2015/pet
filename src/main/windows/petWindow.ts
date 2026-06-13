@@ -1,28 +1,11 @@
 // src/main/windows/petWindow.ts  — BASE authored by 3.1; setPetWindow added by 7.1.
 // createPetWindow(): transparent, frameless, always-on-top pet window factory. GLUE.
-import { BrowserWindow, screen, type Display } from 'electron'
+import { BrowserWindow } from 'electron'
 import { join } from 'node:path'
 import { clampPositionToDisplays } from '@shared/position'
-import type { DisplayBounds, PetPosition, Settings } from '@shared/types'
+import type { PetPosition, Settings } from '@shared/types'
 import { setPetWindow } from './windowManager'
-
-/** Map connected Electron displays to plain DisplayBounds (primary first). */
-function readDisplayBounds(): DisplayBounds[] {
-  const primary = screen.getPrimaryDisplay()
-  const all = screen.getAllDisplays()
-  // Ensure the primary display is first (clampPositionToDisplays falls back to
-  // displays[0] when nothing overlaps).
-  const ordered = [primary, ...all.filter((d) => d.id !== primary.id)]
-  return ordered.map((d) => ({
-    id: d.id,
-    workArea: {
-      x: d.workArea.x,
-      y: d.workArea.y,
-      width: d.workArea.width,
-      height: d.workArea.height
-    }
-  }))
-}
+import { readDisplayBounds } from '../displays'
 
 /**
  * Create the transparent/frameless always-on-top pet window from the loaded
@@ -92,18 +75,6 @@ export function createPetWindow(settings: Settings): BrowserWindow {
   return win
 }
 
-function toDisplayBounds(displays: Display[]): DisplayBounds[] {
-  return displays.map((d) => ({
-    id: d.id,
-    workArea: {
-      x: d.workArea.x,
-      y: d.workArea.y,
-      width: d.workArea.width,
-      height: d.workArea.height
-    }
-  }))
-}
-
 /**
  * Restores the saved pet-window bounds, clamped to currently-connected
  * displays so an off-screen / removed-monitor position is pulled on-screen.
@@ -115,8 +86,7 @@ export function restorePetPosition(
   win: BrowserWindow,
   saved: PetPosition
 ): void {
-  const displays = toDisplayBounds(screen.getAllDisplays())
-  const clamped = clampPositionToDisplays(saved, displays)
+  const clamped = clampPositionToDisplays(saved, readDisplayBounds())
   win.setBounds({
     x: clamped.x,
     y: clamped.y,

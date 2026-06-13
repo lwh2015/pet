@@ -27,7 +27,12 @@ const { listeners, fakeScreen } = vi.hoisted(() => {
         id: 1,
         workArea: { x: 0, y: 0, width: 1920, height: 1040 }
       }
-    ])
+    ]),
+    // readDisplayBounds (shared primary-first mapper) calls getPrimaryDisplay.
+    getPrimaryDisplay: vi.fn(() => ({
+      id: 1,
+      workArea: { x: 0, y: 0, width: 1920, height: 1040 }
+    }))
   }
   return { listeners, fakeScreen }
 })
@@ -65,6 +70,10 @@ describe('startDisplayWatcher', () => {
     fakeScreen.getAllDisplays.mockReturnValue([
       { id: 1, workArea: { x: 0, y: 0, width: 1920, height: 1040 } }
     ])
+    fakeScreen.getPrimaryDisplay.mockReturnValue({
+      id: 1,
+      workArea: { x: 0, y: 0, width: 1920, height: 1040 }
+    })
   })
 
   it('re-clamps an off-screen window when a display is removed', () => {

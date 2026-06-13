@@ -7,27 +7,17 @@
 // ============================================================================
 import { screen, type BrowserWindow, type Display, type Event } from 'electron'
 import { clampPositionToDisplays } from '@shared/position'
-import type { DisplayBounds } from '@shared/types'
-
-function toDisplayBounds(displays: Display[]): DisplayBounds[] {
-  return displays.map((d) => ({
-    id: d.id,
-    workArea: {
-      x: d.workArea.x,
-      y: d.workArea.y,
-      width: d.workArea.width,
-      height: d.workArea.height
-    }
-  }))
-}
+import { readDisplayBounds } from './displays'
 
 function reclamp(getWindow: () => BrowserWindow | null): void {
   const win = getWindow()
   if (!win || win.isDestroyed()) return
   const [x, y] = win.getPosition()
   const [width, height] = win.getSize()
-  const displays = toDisplayBounds(screen.getAllDisplays())
-  const clamped = clampPositionToDisplays({ x, y, width, height }, displays)
+  const clamped = clampPositionToDisplays(
+    { x, y, width, height },
+    readDisplayBounds()
+  )
   if (
     clamped.x !== x ||
     clamped.y !== y ||
