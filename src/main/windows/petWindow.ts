@@ -1,6 +1,6 @@
 // src/main/windows/petWindow.ts  — BASE authored by 3.1; setPetWindow added by 7.1.
 // createPetWindow(): transparent, frameless, always-on-top pet window factory. GLUE.
-import { BrowserWindow, screen } from 'electron'
+import { BrowserWindow, screen, type Display } from 'electron'
 import { join } from 'node:path'
 import { clampPositionToDisplays } from '@shared/position'
 import type { DisplayBounds, PetPosition, Settings } from '@shared/types'
@@ -90,4 +90,37 @@ export function createPetWindow(settings: Settings): BrowserWindow {
   }
 
   return win
+}
+
+function toDisplayBounds(displays: Display[]): DisplayBounds[] {
+  return displays.map((d) => ({
+    id: d.id,
+    workArea: {
+      x: d.workArea.x,
+      y: d.workArea.y,
+      width: d.workArea.width,
+      height: d.workArea.height
+    }
+  }))
+}
+
+/**
+ * Restores the saved pet-window bounds, clamped to currently-connected
+ * displays so an off-screen / removed-monitor position is pulled on-screen.
+ * Exported so the display watcher and tests reuse the same clamp path as the
+ * launch restore that createPetWindow performs inline.
+ * Must be called AFTER app is ready (uses the screen module).
+ */
+export function restorePetPosition(
+  win: BrowserWindow,
+  saved: PetPosition
+): void {
+  const displays = toDisplayBounds(screen.getAllDisplays())
+  const clamped = clampPositionToDisplays(saved, displays)
+  win.setBounds({
+    x: clamped.x,
+    y: clamped.y,
+    width: clamped.width,
+    height: clamped.height
+  })
 }
