@@ -25,6 +25,7 @@
 
 - **pixi.js v7** + **pixi-live2d-display-advanced**（支持 Cubism 2.1 / 3 / 4；与 pixi v7 配套，避开 v8 fork 的不稳定）。
 - **Cubism Core 运行时** `live2dcubismcore.min.js`：作为本地静态脚本，由宠物入口 `src/renderer/index.html` 用 `<script src>` 引入（它在 `window.Live2DCubismCore` 挂全局，pixi-live2d-display-advanced 依赖它）。本地脚本符合现有 CSP `script-src 'self'`。
+- **严格 CSP 必须配 `@pixi/unsafe-eval`**（实现时踩到的坑，已修复）：pixi v7 渲染器用 `new Function()` 生成着色器，在 `script-src 'self'`（无 `'unsafe-eval'`）下会抛 "Current environment does not allow unsafe-eval"，导致 `Live2DModel.from` 失败、回退到占位形象。解决：装 `@pixi/unsafe-eval`（版本对齐 `pixi.js`），在创建任何 `PIXI.Application` 之前 `import '@pixi/unsafe-eval'`（7.1.0 起 import 即自安装，无需调用已废弃的 `install()`）以改写 eval 路径——既能渲染又保持严格 CSP，不放开 `unsafe-eval`。
 - 模型资源放 `resources/live2d/<model>/`（`electron-builder.yml` 的 `asarUnpack: resources/**` 已覆盖；如需进 `extraResources` 再补）。**模型路径与名称走配置常量**，换模型不改组件代码。
 - 版本以实现阶段的研究为准（pixi v7.x、pixi-live2d-display-advanced 最新、Cubism Core 官方）。
 
