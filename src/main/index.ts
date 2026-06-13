@@ -1,10 +1,11 @@
-import { app } from 'electron'
+import { app, shell, dialog } from 'electron'
 import { IPC } from '@shared/ipc'
 import type { PassthroughMode, PassthroughModeChangedPayload } from '@shared/types'
 import { getPetWindow, getPanelWindow, togglePetVisibility } from './windows/windowManager'
 import { showPanelWindow } from './windows/panelWindow'
 import { createPetWindow } from './windows/petWindow'
 import { createSettingsStore } from './settingsStore'
+import { createLibraryStore } from './libraryStore'
 import { createPassthroughController } from './passthrough'
 import { registerIpcHandlers } from './ipc'
 import { startDisplayWatcher } from './displayWatcher'
@@ -42,6 +43,9 @@ function bootstrap(): void {
     const settingsStore = createSettingsStore(app.getPath('userData'))
     let settings = settingsStore.load()
 
+    // 1b) File library store (node:sqlite DB + content-addressed vault).
+    const libraryStore = createLibraryStore(app.getPath('userData'))
+
     // 2) Pet window (factory restores clamped position, registers ref, honors petVisible).
     createPetWindow(settings)
 
@@ -60,6 +64,12 @@ function bootstrap(): void {
       }
     }
 
+    // 4b) Library-changed broadcast: notify the panel to re-list (destroyed-safe).
+    const broadcastLibraryChanged = (): void => {
+      const panel = getPanelWindow()
+      if (panel && !panel.isDestroyed()) panel.webContents.send(IPC.LIBRARY_CHANGED)
+    }
+
     // 5) IPC: base (settings:get/set, pet:open-panel) + extensions (setInteractive, drag).
     //    Returns { flushPersist } (the drag-controller flush handle). One deps shape.
     const ipcHandles = registerIpcHandlers({
@@ -68,7 +78,11 @@ function bootstrap(): void {
       showPanelWindow,
       getPetWindow,
       broadcastSettingsChanged,
-      getAllWindows: () => [getPetWindow(), getPanelWindow()]
+      getAllWindows: () => [getPetWindow(), getPanelWindow()],
+      libraryStore,
+      shell,
+      dialog,
+      broadcastLibraryChanged
     })
 
     // 6) Display watcher (re-clamp on monitor changes). Returns a disposer.
@@ -106,6 +120,7 @@ function bootstrap(): void {
     app.on('before-quit', () => {
       ipcHandles.flushPersist()
       stopDisplayWatcher()
+      libraryStore.dispose()
     })
 
     app.on('activate', () => {

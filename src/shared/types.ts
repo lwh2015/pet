@@ -105,3 +105,30 @@ export interface SettingsChangedPayload {
 export interface PassthroughModeChangedPayload {
   mode: PassthroughMode
 }
+
+// ---------------------------------------------------------------------------
+// Plan 3: file ingestion / library domain types. ELECTRON-FREE.
+// ---------------------------------------------------------------------------
+
+/** One ingested file's metadata row (camelCase view of the SQLite `files` row). */
+export interface FileRecord {
+  id: number
+  /** Lowercase 64-char hex sha256; locates the content-addressed blob. */
+  sha256: string
+  /** Display name as fed in, incl. extension, e.g. "Budget.xlsx". */
+  originalName: string
+  /** Lowercased extension incl. dot (".xlsx"), or "" if none. */
+  ext: string
+  /** Best-effort MIME by extension; "application/octet-stream" when unknown. */
+  mime: string
+  sizeBytes: number
+  /** ISO 8601 timestamp. */
+  ingestedAt: string
+  /** Original absolute path (provenance only), or null. */
+  sourcePath: string | null
+}
+
+/** Per-file outcome of an ingest request (one input path -> one result). */
+export type IngestResult =
+  | { ok: true; record: FileRecord }
+  | { ok: false; sourcePath: string; error: string }
