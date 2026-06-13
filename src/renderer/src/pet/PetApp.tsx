@@ -11,8 +11,9 @@
 //     the model that crosses the drag threshold drives window.petApi.drag.*;
 //     a mousedown over the model with no drag is a TAP -> playAction('react').
 //     A mousedown over a transparent area is ignored (passes through).
-//   - HTML5 file drag/drop on the window -> playAction('receive') as VISUAL
-//     feedback ONLY. No path read, no IPC, no storage; real ingestion is Plan 3.
+//   - HTML5 file drag/drop on the window -> playAction('receive') for visual
+//     feedback AND resolves real OS paths via window.petApi.resolveDroppedPaths +
+//     window.petApi.ingestPaths (Plan 3 real ingestion into the vault).
 //
 // CROSS-GROUP COUPLING: onMouseDown sits on .pet-root (pointer-events:none in
 // the sibling-group pet.css). The press lands on the descendant
@@ -142,9 +143,15 @@ export function PetApp(): React.JSX.Element {
       e.preventDefault()
       const files = e.dataTransfer?.files
       if (!files || files.length === 0) return
-      // VISUAL feedback only. Read through the ref so a disposed/absent
-      // controller no-ops.
+      // Visual feedback (Plan 2 behavior, PRESERVED) — fires even if ingest fails.
       controllerRef.current?.playAction('receive')
+      // Plan 3: resolve real OS paths in the preload and ingest them.
+      const paths = window.petApi.resolveDroppedPaths(files)
+      if (paths.length > 0) {
+        void window.petApi.ingestPaths(paths).catch((err: unknown) => {
+          console.error('[PetApp] ingest failed', err)
+        })
+      }
     }
     window.addEventListener('dragover', onDragOver)
     window.addEventListener('drop', onDrop)
