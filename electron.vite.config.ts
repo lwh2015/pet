@@ -38,8 +38,6 @@ export default defineConfig({
     },
     plugins: [react()],
     build: {
-      // Fewer shared chunks across the two HTML entries.
-      isolatedEntries: true,
       rollupOptions: {
         // Two HTML entries -> out/renderer/index.html + out/renderer/panel.html.
         input: {
