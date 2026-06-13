@@ -24,11 +24,11 @@ describe('buildPanelApi', () => {
   it('exposes the settings + library surface', () => {
     const api = buildPanelApi(makeFakeIpc() as never)
     expect(Object.keys(api).sort()).toEqual([
+      'getPathForFile',
       'getSettings',
       'library',
       'onLibraryChanged',
       'onSettingsChanged',
-      'resolveDroppedPaths',
       'setSettings'
     ])
     expect(Object.keys(api.library).sort()).toEqual([
@@ -41,10 +41,10 @@ describe('buildPanelApi', () => {
     ])
   })
 
-  it('resolveDroppedPaths maps Files via injected getPathForFile, dropping empties', () => {
-    const getPathForFile = vi.fn((f: { name: string }) => (f.name === 'x' ? '' : `/p/${f.name}`))
-    const api = buildPanelApi(makeFakeIpc() as never, getPathForFile as never)
-    expect(api.resolveDroppedPaths([{ name: 'a' }, { name: 'x' }] as never)).toEqual(['/p/a'])
+  it('getPathForFile delegates to the injected resolver (single File)', () => {
+    const pathResolver = vi.fn((f: { name: string }) => `/p/${f.name}`)
+    const api = buildPanelApi(makeFakeIpc() as never, pathResolver as never)
+    expect(api.getPathForFile({ name: 'a' } as never)).toBe('/p/a')
   })
 
   it('library.list/remove/open/reveal/pick invoke their channels', async () => {

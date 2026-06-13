@@ -145,8 +145,14 @@ export function PetApp(): React.JSX.Element {
       if (!files || files.length === 0) return
       // Visual feedback (Plan 2 behavior, PRESERVED) — fires even if ingest fails.
       controllerRef.current?.playAction('receive')
-      // Plan 3: resolve real OS paths in the preload and ingest them.
-      const paths = window.petApi.resolveDroppedPaths(files)
+      // Plan 3: resolve each dropped file's real OS path in the preload. Iterate
+      // HERE in the renderer where the FileList is real — a FileList does NOT
+      // survive the contextBridge, but a single File passed per call does.
+      const paths: string[] = []
+      for (const f of Array.from(files)) {
+        const p = window.petApi.getPathForFile(f)
+        if (p) paths.push(p)
+      }
       if (paths.length > 0) {
         void window.petApi.ingestPaths(paths).catch((err: unknown) => {
           console.error('[PetApp] ingest failed', err)

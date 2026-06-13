@@ -8,7 +8,7 @@ import type { Settings, SettingsChangedPayload } from '@shared/types'
 /** Pure factory for the panelApi surface (injected ipcRenderer + path resolver). */
 export function buildPanelApi(
   ipc: IpcRenderer,
-  getPathForFile: (file: File) => string = (file) => webUtils.getPathForFile(file)
+  pathResolver: (file: File) => string = (file) => webUtils.getPathForFile(file)
 ): PanelApi {
   return {
     getSettings(): Promise<Settings> {
@@ -23,13 +23,8 @@ export function buildPanelApi(
       return () => ipc.removeListener(IPC.SETTINGS_CHANGED, listener)
     },
     // --- Plan 3 ---
-    resolveDroppedPaths(files: FileList | File[]): string[] {
-      const out: string[] = []
-      for (const f of Array.from(files)) {
-        const p = getPathForFile(f)
-        if (p) out.push(p)
-      }
-      return out
+    getPathForFile(file: File): string {
+      return pathResolver(file)
     },
     library: {
       list: () => ipc.invoke(IPC.LIBRARY_LIST),

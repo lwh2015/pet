@@ -65,10 +65,12 @@ export interface RendererApi {
   onSettingsChanged(cb: (settings: Settings) => void): Unsubscribe
   onPassthroughModeChanged(cb: (payload: PassthroughModeChangedPayload) => void): Unsubscribe
   /**
-   * Resolve dropped File objects to absolute OS paths via webUtils (runs in
-   * preload; '' results are dropped). Synchronous.
+   * Resolve ONE dropped File to its absolute OS path via webUtils (runs in
+   * preload). Returns '' if the file has no on-disk path. A single File survives
+   * the contextBridge; a FileList does NOT — the renderer must iterate and call
+   * this per file.
    */
-  resolveDroppedPaths(files: FileList | File[]): string[]
+  getPathForFile(file: File): string
   /** Ingest the given absolute paths (drop-on-pet). */
   ingestPaths(paths: string[]): Promise<IngestResult[]>
 }
@@ -82,7 +84,8 @@ export interface PanelApi {
   getSettings(): Promise<Settings>
   setSettings(patch: Partial<Settings>): Promise<Settings>
   onSettingsChanged(cb: (settings: Settings) => void): Unsubscribe
-  resolveDroppedPaths(files: FileList | File[]): string[]
+  /** Resolve ONE dropped File to its absolute OS path (see RendererApi note). */
+  getPathForFile(file: File): string
   library: LibraryApi
   onLibraryChanged(cb: () => void): Unsubscribe
 }

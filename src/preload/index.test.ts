@@ -79,18 +79,12 @@ describe('buildPetApi', () => {
     expect(ipc.removeListener.mock.calls[0][0]).toBe(IPC.SETTINGS_CHANGED)
   })
 
-  it('resolveDroppedPaths maps File objects through getPathForFile, dropping empties', () => {
+  it('getPathForFile delegates to the injected resolver (single File)', () => {
     const ipc = makeFakeIpc()
-    const getPathForFile = vi.fn((f: { name: string }) =>
-      f.name === 'empty' ? '' : `/abs/${f.name}`
-    )
-    const api = buildPetApi(ipc as never, getPathForFile as never)
-    const paths = api.resolveDroppedPaths([
-      { name: 'a' },
-      { name: 'empty' },
-      { name: 'b' }
-    ] as never)
-    expect(paths).toEqual(['/abs/a', '/abs/b'])
+    const pathResolver = vi.fn((f: { name: string }) => `/abs/${f.name}`)
+    const api = buildPetApi(ipc as never, pathResolver as never)
+    expect(api.getPathForFile({ name: 'a' } as never)).toBe('/abs/a')
+    expect(pathResolver).toHaveBeenCalledTimes(1)
   })
 
   it('ingestPaths invokes IPC.LIBRARY_INGEST with the paths', async () => {

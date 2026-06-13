@@ -17,7 +17,7 @@ import type {
  */
 export function buildPetApi(
   ipc: IpcRenderer,
-  getPathForFile: (file: File) => string = (file) => webUtils.getPathForFile(file)
+  pathResolver: (file: File) => string = (file) => webUtils.getPathForFile(file)
 ): RendererApi {
   return {
     getSettings(): Promise<Settings> {
@@ -52,13 +52,8 @@ export function buildPetApi(
       end: () => ipc.send(IPC.PET_DRAG_END)
     },
     // --- Plan 3 adds ---
-    resolveDroppedPaths(files: FileList | File[]): string[] {
-      const out: string[] = []
-      for (const f of Array.from(files)) {
-        const p = getPathForFile(f)
-        if (p) out.push(p)
-      }
-      return out
+    getPathForFile(file: File): string {
+      return pathResolver(file)
     },
     ingestPaths(paths: string[]): Promise<IngestResult[]> {
       return ipc.invoke(IPC.LIBRARY_INGEST, paths)

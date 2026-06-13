@@ -72,7 +72,14 @@ export function FileLibrary(): React.JSX.Element {
       setDragOver(false)
       const files = e.dataTransfer?.files
       if (!files || files.length === 0) return
-      void ingestPaths(window.panelApi.resolveDroppedPaths(files))
+      // Iterate the real FileList here; pass each File to the preload singly
+      // (a FileList does not survive the contextBridge).
+      const paths: string[] = []
+      for (const f of Array.from(files)) {
+        const p = window.panelApi.getPathForFile(f)
+        if (p) paths.push(p)
+      }
+      void ingestPaths(paths)
     },
     [ingestPaths]
   )
