@@ -3,7 +3,7 @@
 // object (setInteractive, drag.*, onPassthroughModeChanged); this is the base.
 import { contextBridge, ipcRenderer, type IpcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { IPC, type RendererApi, type Unsubscribe } from '@shared/ipc'
+import { IPC, type RendererApi, type Unsubscribe, type CursorPoint } from '@shared/ipc'
 import type { Settings, SettingsChangedPayload, PassthroughModeChangedPayload } from '@shared/types'
 
 /**
@@ -42,6 +42,11 @@ export function buildPetApi(ipc: IpcRenderer): RendererApi {
       start: () => ipc.send(IPC.PET_DRAG_START),
       move: () => ipc.send(IPC.PET_DRAG_MOVE),
       end: () => ipc.send(IPC.PET_DRAG_END)
+    },
+    onCursorMove: (cb: (p: CursorPoint) => void): Unsubscribe => {
+      const l = (_e: unknown, p: CursorPoint): void => cb(p)
+      ipc.on(IPC.PET_CURSOR_MOVE, l)
+      return () => ipc.removeListener(IPC.PET_CURSOR_MOVE, l)
     }
   }
 }

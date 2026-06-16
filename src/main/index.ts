@@ -1,4 +1,4 @@
-import { app } from 'electron'
+import { app, screen } from 'electron'
 import { IPC } from '@shared/ipc'
 import type { PassthroughMode, PassthroughModeChangedPayload } from '@shared/types'
 import { getPetWindow, getPanelWindow, togglePetVisibility } from './windows/windowManager'
@@ -9,6 +9,7 @@ import { createPassthroughController } from './passthrough'
 import { registerIpcHandlers } from './ipc'
 import { startDisplayWatcher } from './displayWatcher'
 import { createTray, type TrayHandlers } from './tray'
+import { createCursorTracker } from './cursorTracker'
 
 // --- Single-instance lock (before any window creation, R5) --------------------
 const gotTheLock = app.requestSingleInstanceLock()
@@ -44,6 +45,14 @@ function bootstrap(): void {
 
     // 2) Pet window (factory restores clamped position, registers ref, honors petVisible).
     createPetWindow(settings)
+
+    // Whole-screen eye tracking: poll global cursor -> push window-local point.
+    const cursorTracker = createCursorTracker({
+      getPetWindow,
+      getCursorScreenPoint: () => screen.getCursorScreenPoint(),
+      send: (local) => getPetWindow()?.webContents.send(IPC.PET_CURSOR_MOVE, local)
+    })
+    cursorTracker.start()
 
     // 3) Passthrough controller bound to the live pet window; init from settings.
     const passthrough = createPassthroughController(getPetWindow)
@@ -104,6 +113,7 @@ function bootstrap(): void {
 
     // 9) Flush pending drag-persist on quit, then stop the watcher.
     app.on('before-quit', () => {
+      cursorTracker.stop()
       ipcHandles.flushPersist()
       stopDisplayWatcher()
     })

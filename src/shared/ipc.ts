@@ -14,6 +14,7 @@ export const IPC = {
   PET_DRAG_END: 'pet:drag-end',
   PET_OPEN_PANEL: 'pet:open-panel',
   PET_PASSTHROUGH_MODE_CHANGED: 'pet:passthrough-mode-changed',
+  PET_CURSOR_MOVE: 'pet:cursor-move',
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
   SETTINGS_CHANGED: 'settings:changed'
@@ -23,6 +24,12 @@ export type IpcChannel = (typeof IPC)[keyof typeof IPC]
 
 /** Unsubscribe function returned by every on*() listener registration. */
 export type Unsubscribe = () => void
+
+/** Pet-window-local cursor coordinates pushed from main each tick. */
+export interface CursorPoint {
+  x: number
+  y: number
+}
 
 /**
  * The exact surface exposed on the pet window as window.petApi.
@@ -43,6 +50,8 @@ export interface RendererApi {
   setSettings(patch: Partial<Settings>): Promise<Settings>
   onSettingsChanged(cb: (settings: Settings) => void): Unsubscribe
   onPassthroughModeChanged(cb: (payload: PassthroughModeChangedPayload) => void): Unsubscribe
+  /** Subscribe to pet-window-local cursor updates (whole-screen eye tracking). */
+  onCursorMove(cb: (p: CursorPoint) => void): Unsubscribe
 }
 
 /**

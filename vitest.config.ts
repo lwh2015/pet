@@ -9,7 +9,8 @@ export default defineConfig({
     include: [
       'src/shared/**/*.{test,spec}.ts',
       'src/main/**/*.{test,spec}.ts',
-      'src/preload/**/*.{test,spec}.ts'
+      'src/preload/**/*.{test,spec}.ts',
+      'src/renderer/src/pet/pixi/**/*.{test,spec}.ts'
     ],
     exclude: ['**/node_modules/**', 'out/**', 'dist/**']
   },
