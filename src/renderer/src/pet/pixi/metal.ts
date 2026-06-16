@@ -18,13 +18,19 @@ export const CHROME = {
  * "horizon reflection" look. Coordinates are in scene space (canvas 200x210).
  */
 export function makeChromeGradient(topY = 24, bottomY = 150): FillGradient {
-  const g = new FillGradient(100, topY, 100, bottomY)
-  g.addColorStop(0.0, 0xeef2f7)
-  g.addColorStop(0.38, 0xaab3c0)
-  g.addColorStop(0.5, 0xffffff)
-  g.addColorStop(0.58, 0x6c7480)
-  g.addColorStop(1.0, 0x3a3f48)
-  return g
+  return new FillGradient({
+    type: 'linear',
+    start: { x: 100, y: topY },
+    end: { x: 100, y: bottomY },
+    textureSpace: 'local',
+    colorStops: [
+      { offset: 0.0, color: 0xeef2f7 },
+      { offset: 0.38, color: 0xaab3c0 },
+      { offset: 0.5, color: 0xffffff },
+      { offset: 0.58, color: 0x6c7480 },
+      { offset: 1.0, color: 0x3a3f48 }
+    ]
+  })
 }
 
 /** Breathing-synced highlight alpha (the simplified "metal sheen flow"). */
