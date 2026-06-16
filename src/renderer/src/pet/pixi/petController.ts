@@ -2,6 +2,11 @@
 // Owns the PixiJS Application + ticker and applies all pet animations.
 // Imperative API consumed by the React wrapper. Eye-tracking input is in
 // SCENE coordinates (the wrapper converts window-local px -> scene px).
+//
+// Patch PixiJS to use non-eval shader/UBO codegen BEFORE any pixi object is
+// created — the Electron renderer disallows unsafe-eval (CSP), so the default
+// `new Function()` path throws. This side-effect import keeps CSP strict.
+import 'pixi.js/unsafe-eval'
 import { Application } from 'pixi.js'
 import {
   buildScene,
