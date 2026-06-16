@@ -39,8 +39,20 @@ export function ChromeZPet(): React.JSX.Element {
         if (!disposed) setFailed(true)
       })
 
+    // Pause the pixi ticker while the pet window is hidden. The pet window sets
+    // backgroundThrottling:false, so Chromium won't auto-pause rAF — do it here.
+    // Read the controller lazily since it is created asynchronously above.
+    const onVisibility = (): void => {
+      const c = controllerRef.current
+      if (!c) return
+      if (document.hidden) c.pause()
+      else c.resume()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
     return () => {
       disposed = true
+      document.removeEventListener('visibilitychange', onVisibility)
       unsub?.()
       controllerRef.current?.destroy()
       controllerRef.current = null
