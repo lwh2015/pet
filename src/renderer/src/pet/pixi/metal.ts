@@ -13,15 +13,16 @@ export const CHROME = {
 } as const
 
 /**
- * Vertical polished-chrome gradient spanning the pet's body height. Bright top,
- * a hot near-white sheen band in the middle, dark belly — the classic chrome
- * "horizon reflection" look. Coordinates are in scene space (canvas 200x210).
+ * Vertical polished-chrome gradient. Bright top, a hot near-white sheen band in
+ * the middle, dark belly — the classic chrome "horizon reflection" look.
+ * Coordinates use normalized local texture space (0..1, top -> bottom) so the
+ * gradient maps top-to-bottom across each metal shape's bounding box.
  */
-export function makeChromeGradient(topY = 24, bottomY = 150): FillGradient {
+export function makeChromeGradient(): FillGradient {
   return new FillGradient({
     type: 'linear',
-    start: { x: 100, y: topY },
-    end: { x: 100, y: bottomY },
+    start: { x: 0, y: 0 },
+    end: { x: 0, y: 1 },
     textureSpace: 'local',
     colorStops: [
       { offset: 0.0, color: 0xeef2f7 },
