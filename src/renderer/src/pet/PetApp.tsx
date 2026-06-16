@@ -8,7 +8,7 @@
 //          flip it to click-through mid-drag and strand the mouseup.
 import React, { useEffect, useRef } from 'react'
 import { usePassthrough } from './usePassthrough'
-import { PlaceholderPet } from './PlaceholderPet'
+import { ChromeZPet } from './ChromeZPet'
 import { setPetDragging } from './dragState'
 import './pet.css'
 
@@ -62,7 +62,7 @@ export function PetApp(): React.JSX.Element {
 
   return (
     <div className="pet-root" onMouseDown={handlePetMouseDown}>
-      <PlaceholderPet />
+      <ChromeZPet />
     </div>
   )
 }
